@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <h2>Canary Decoy File Manager</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Deploy, monitor, and reset trap files deployed across target directories.</p>
+    </div>
+    <button id="btn-deploy-canaries" class="btn btn-primary">🐤 Deploy All Canaries Now</button>
+</div>
+
+<div class="table-wrapper">
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Filename</th>
+                <th>Directory Path</th>
+                <th>SHA-256 Hash</th>
+                <th>Size (Bytes)</th>
+                <th>Status</th>
+                <th>Trigger Count</th>
+                <th>Last Triggered</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in canaries %}
+            <tr>
+                <td>#{{ c.id }}</td>
+                <td><strong>{{ c.filename }}</strong></td>
+                <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ c.directory }}</td>
+                <td style="font-size: 0.75rem;">{{ c.original_hash[:16] }}...</td>
+                <td>{{ c.file_size_bytes }}</td>
+                <td>
+                    <span style="color: {% if c.is_active %}var(--accent-green){% else %}var(--accent-red){% endif %}; font-weight: bold;">
+                        {% if c.is_active %}ACTIVE TRAP{% else %}TAMPERED{% endif %}
+                    </span>
+                </td>
+                <td>{{ c.trigger_count }}</td>
+                <td>{{ c.last_triggered_at.strftime('%H:%M:%S') if c.last_triggered_at else 'Never' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No canary files registered. Click button above to deploy.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

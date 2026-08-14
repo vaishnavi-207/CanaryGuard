@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <h2>Threat Statistics & Behavioral Analytics</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Historical trends, entropy distribution charts, and quarantine activity metrics.</p>
+    </div>
+    <!-- Export options (Feature 14) -->
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="/api/export/csv" class="btn btn-secondary" style="font-size: 0.8rem;">📥 Export CSV</a>
+        <a href="/api/export/json" class="btn btn-secondary" style="font-size: 0.8rem;">📥 Export JSON</a>
+        <a href="/api/reports/pdf" target="_blank" class="btn btn-primary" style="font-size: 0.8rem;">📄 PDF Report</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card">
+        <h3 style="margin-bottom: 1rem; font-size: 1rem;">Threat Level Distribution</h3>
+        <div style="height: 220px; position: relative;">
+            <canvas id="chart-threat-levels"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 1rem; font-size: 1rem;">Incident Activity Frequency</h3>
+        <div style="height: 220px; position: relative;">
+            <canvas id="chart-activity"></canvas>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card">
+        <h3 style="margin-bottom: 1rem; font-size: 1rem;">Shannon Entropy History</h3>
+        <div style="height: 200px; position: relative;">
+            <canvas id="chart-entropy-history"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 1rem; font-size: 1rem;">Quarantine History Trend</h3>
+        <div style="height: 200px; position: relative;">
+            <canvas id="chart-quarantine-history"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let statsChartInstances = [];
+
+function renderStatsCharts() {
+    statsChartInstances.forEach(c => c.destroy());
+    statsChartInstances = [];
+
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const textColor = currentTheme === 'light' ? '#475569' : '#f8fafc';
+    const gridColor = currentTheme === 'light' ? '#cbd5e1' : 'rgba(56, 189, 248, 0.15)';
+
+    // Threat Levels Doughnut
+    const ctxLevels = document.getElementById('chart-threat-levels');
+    if (ctxLevels) {
+        const c1 = new Chart(ctxLevels, {
+            type: 'doughnut',
+            data: {
+                labels: ['Critical', 'High', 'Medium', 'Low'],
+                datasets: [{
+                    data: [
+                        {{ incidents | selectattr('threat_level', 'equalto', 'CRITICAL') | list | length }},
+                        {{ incidents | selectattr('threat_level', 'equalto', 'HIGH') | list | length }},
+                        {{ incidents | selectattr('threat_level', 'equalto', 'MEDIUM') | list | length }},
+                        {{ incidents | selectattr('threat_level', 'equalto', 'LOW') | list | length }}
+                    ],
+                    backgroundColor: ['#ef4444', '#f59e0b', '#00f3ff', '#10b981']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: textColor } } }
+            }
+        });
+        statsChartInstances.push(c1);
+    }
+
+    // Activity Bar
+    const ctxAct = document.getElementById('chart-activity');
+    if (ctxAct) {
+        const c2 = new Chart(ctxAct, {
+            type: 'bar',
+            data: {
+                labels: ['Canary Hits', 'Entropy Anomalies', 'Quarantines Executed'],
+                datasets: [{
+                    label: 'Event Counts',
+                    data: [
+                        {{ incidents | selectattr('canary_triggered', 'equalto', true) | list | length }},
+                        {{ incidents | selectattr('entropy_value') | list | length }},
+                        {{ incidents | selectattr('action_taken', 'equalto', 'QUARANTINED') | list | length }}
+                    ],
+                    backgroundColor: ['#ef4444', '#3b82f6', '#10b981']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { ticks: { color: textColor }, grid: { color: gridColor } }, x: { ticks: { color: textColor }, grid: { color: gridColor } } },
+                plugins: { legend: { labels: { color: textColor } } }
+            }
+        });
+        statsChartInstances.push(c2);
+    }
+
+    // Entropy History
+    const ctxEnt = document.getElementById('chart-entropy-history');
+    if (ctxEnt) {
+        const c3 = new Chart(ctxEnt, {
+            type: 'line',
+            data: {
+                labels: ['Sample 1', 'Sample 2', 'Sample 3', 'Sample 4', 'Sample 5', 'Sample 6'],
+                datasets: [{
+                    label: 'Entropy Value (Shannon 0-8)',
+                    data: [3.4, 3.8, 4.1, 7.8, 7.9, 4.2],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { ticks: { color: textColor }, grid: { color: gridColor } }, x: { ticks: { color: textColor }, grid: { color: gridColor } } },
+                plugins: { legend: { labels: { color: textColor } } }
+            }
+        });
+        statsChartInstances.push(c3);
+    }
+
+    // Quarantine History
+    const ctxQuar = document.getElementById('chart-quarantine-history');
+    if (ctxQuar) {
+        const c4 = new Chart(ctxQuar, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Process Isolations',
+                    data: [0, 1, 0, 2, 1, 0, 3],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { ticks: { color: textColor }, grid: { color: gridColor } }, x: { ticks: { color: textColor }, grid: { color: gridColor } } },
+                plugins: { legend: { labels: { color: textColor } } }
+            }
+        });
+        statsChartInstances.push(c4);
+    }
+}
+
+window.refreshChartsTheme = function() {
+    renderStatsCharts();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderStatsCharts();
+});
+</script>
+{% endblock %}

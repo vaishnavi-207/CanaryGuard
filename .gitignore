@@ -1,0 +1,32 @@
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment & Config
+.env
+venv/
+env/
+ENV/
+
+# Databases
+database/*.db
+*.sqlite3
+
+# Logs
+logs/*.log
+
+# Operating System specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Canary & Test Artifacts
+monitored_test/
+quarantine_store/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp

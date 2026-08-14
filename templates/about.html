@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <h2>About CanaryGuard EDR Platform</h2>
+    <p style="color: var(--text-secondary); font-size: 0.9rem;">Intelligent Endpoint Ransomware Detection & File Integrity Monitoring System.</p>
+</div>
+
+<div class="card" style="line-height: 1.8;">
+    <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;">Core Capabilities</h3>
+    <ul style="padding-left: 1.25rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+        <li><strong style="color: #fff;">Behavioral Ransomware Detection:</strong> Identifies malicious activity using Shannon Entropy analysis and file access pattern bursts without relying on static signature updates.</li>
+        <li><strong style="color: #fff;">Canary Decoy Files:</strong> Automatically deploys hidden decoy documents (`Confidential_Report.docx`, `Payroll.xlsx`, etc.) that act as early warning traps.</li>
+        <li><strong style="color: #fff;">Automatic Quarantine Engine:</strong> Instantly suspends and terminates malicious processes and their child threads upon detection.</li>
+        <li><strong style="color: #fff;">Real-Time Dashboard:</strong> Powered by Flask, Socket.IO, and SQLite with multi-channel rotating logging.</li>
+    </ul>
+
+    <h3 style="color: var(--accent-cyan); margin-bottom: 0.5rem;">Target Academic & Professional Specification</h3>
+    <p style="color: var(--text-secondary);">Designed as an enterprise-grade Endpoint Detection & Response (EDR) solution suitable for demonstration, GitHub publication, and academic evaluation.</p>
+</div>
+{% endblock %}

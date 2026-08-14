@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <h2>Live Threat Feed Stream</h2>
+    <p style="color: var(--text-secondary); font-size: 0.9rem;">Real-time feed of detected file system events, Shannon entropy calculations, and canary decoy alerts.</p>
+</div>
+
+<div class="table-wrapper">
+    <table class="custom-table" id="threat-feed-table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Level</th>
+                <th>Confidence</th>
+                <th>Process Name (PID)</th>
+                <th>Target File Path</th>
+                <th>Entropy</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inc in incidents %}
+            <tr>
+                <td>{{ inc.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>
+                    <span style="color: {% if inc.threat_level == 'CRITICAL' %}var(--accent-red){% elif inc.threat_level == 'HIGH' %}var(--accent-yellow){% else %}var(--accent-cyan){% endif %}; font-weight: bold;">
+                        {{ inc.threat_level }}
+                    </span>
+                </td>
+                <td>{{ inc.confidence_score }}%</td>
+                <td>{{ inc.process_name or 'N/A' }} ({{ inc.process_id or '?' }})</td>
+                <td style="max-width: 300px; word-break: break-all;">{{ inc.file_path }}</td>
+                <td>{{ inc.entropy_value or 'N/A' }}</td>
+                <td><span style="color: var(--accent-green);">{{ inc.action_taken }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No threat feed data recorded yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

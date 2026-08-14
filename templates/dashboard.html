@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Top Action Bar -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2>Security Operations Center — AI EDR Dashboard</h2>
+    <div style="display: flex; gap: 0.75rem;">
+        {% if status and status.is_running %}
+        <button id="btn-stop-monitor" class="btn btn-danger">⛔ Stop Protection Engine</button>
+        {% else %}
+        <button id="btn-start-monitor" class="btn btn-primary">▶ Start Protection Engine</button>
+        {% endif %}
+        <button id="btn-deploy-canaries" class="btn btn-secondary">🐤 Deploy Canary Decoys</button>
+    </div>
+</div>
+
+<!-- Stat Cards Grid (Features 3, 11, 12) -->
+<div class="grid-cards">
+    <div class="card">
+        <div class="card-header-sm">
+            <span class="card-title-sm">System Protection</span>
+            <span>🛡️</span>
+        </div>
+        <div class="card-value" style="color: {% if status and status.is_running %}var(--accent-green){% else %}var(--accent-red){% endif %}; font-size: 1.4rem;">
+            {% if status and status.is_running %}ONLINE{% else %}PAUSED{% endif %}
+        </div>
+    </div>
+
+    <!-- AI Threat Score Card (Feature 3) -->
+    <div class="card">
+        <div class="card-header-sm">
+            <span class="card-title-sm">AI Threat Score</span>
+            <span style="font-size: 0.8rem; color: var(--accent-cyan);">CONFIDENCE 92%</span>
+        </div>
+        <div class="card-value" id="ai-threat-score-val" style="color: var(--accent-red);">82%</div>
+        <div class="threat-score-bar-bg">
+            <div class="threat-score-bar-fill" id="ai-threat-score-bar" style="width: 82%;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header-sm">
+            <span class="card-title-sm">Active Canaries</span>
+            <span>🐤</span>
+        </div>
+        <div class="card-value" id="stat-canary-count">{{ canary_count }}</div>
+    </div>
+
+    <div class="card">
+        <div class="card-header-sm">
+            <span class="card-title-sm">Total Incidents</span>
+            <span>🚨</span>
+        </div>
+        <div class="card-value" id="stat-total-incidents" style="color: var(--accent-yellow);">{{ total_incidents }}</div>
+    </div>
+
+    <div class="card">
+        <div class="card-header-sm">
+            <span class="card-title-sm">Quarantine Count</span>
+            <span>⚔️</span>
+        </div>
+        <div class="card-value" id="stat-quarantine-count" style="color: var(--accent-cyan);">{{ quarantine_count }}</div>
+    </div>
+</div>
+
+<!-- Feature 6 AI Security Insights Card & Features 12 & 13 Charts Grid -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    
+    <!-- AI Security Insights Card -->
+    <div class="card">
+        <div class="card-header-sm" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <span class="card-title-sm" style="font-size: 1rem; color: var(--accent-cyan);">🤖 AI Security Insights (Auto Refreshing)</span>
+            <span class="status-badge status-active" style="font-size: 0.7rem;">LIVE TELEMETRY</span>
+        </div>
+        <div id="ai-insights-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; font-size: 0.9rem;">
+            <div>✓ <strong>Monitoring Health:</strong> <span id="insight-health" style="color: var(--accent-green);">Healthy</span></div>
+            <div>✓ <strong>Ransomware Status:</strong> <span id="insight-ransomware">No ransomware detected</span></div>
+            <div>✓ <strong>Most Active Folder:</strong> <span id="insight-folder" style="font-family: var(--font-mono);">C:\Monitored</span></div>
+            <div>✓ <strong>Most Targeted Extension:</strong> <span id="insight-ext" style="font-family: var(--font-mono); color: var(--accent-yellow);">.docx / .xlsx</span></div>
+            <div>✓ <strong>Highest Entropy Today:</strong> <span id="insight-entropy" style="font-family: var(--font-mono);">4.12 Shannon</span></div>
+            <div>✓ <strong>Threat Trend:</strong> <span id="insight-trend" style="color: var(--accent-cyan); font-weight: bold;">STABLE</span></div>
+        </div>
+    </div>
+
+    <!-- Live Threat Trend Graph -->
+    <div class="card">
+        <div class="card-header-sm">
+            <span class="card-title-sm">Threat Trend Analytics</span>
+            <span>📈</span>
+        </div>
+        <div style="height: 180px; position: relative;">
+            <canvas id="threatTrendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Main Overview Grid (Feature 12) -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <!-- Active Incidents Table with AI Analysis Direct Links -->
+    <div class="table-wrapper">
+        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.1rem; color: var(--text-primary);">Active Threat Incidents</h3>
+            <a href="/incidents" style="color: var(--accent-cyan); text-decoration: none; font-size: 0.85rem;">View All →</a>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Threat Level</th>
+                    <th>Process</th>
+                    <th>File Path</th>
+                    <th>AI Analysis</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if active_incidents %}
+                    {% for inc in active_incidents[:10] %}
+                    <tr>
+                        <td>{{ inc.created_at.strftime('%H:%M:%S') }}</td>
+                        <td>
+                            <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; background: {% if inc.threat_level == 'CRITICAL' %}rgba(239, 68, 68, 0.2){% else %}rgba(245, 158, 11, 0.2){% endif %}; color: {% if inc.threat_level == 'CRITICAL' %}var(--accent-red){% else %}var(--accent-yellow){% endif %};">
+                                {{ inc.threat_level }}
+                            </span>
+                        </td>
+                        <td>{{ inc.process_name or 'N/A' }} (PID: {{ inc.process_id or '?' }})</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ inc.file_path }}</td>
+                        <td><a href="/incidents/{{ inc.id }}" class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">AI Breakdown →</a></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">No active threat incidents recorded. System is secure.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Protected Directory Paths -->
+    <div class="card" style="height: fit-content;">
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Protected Directory Paths</h3>
+        {% if status and status.monitored_paths %}
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for path in status.monitored_paths %}
+                <li style="background: rgba(148,163,184,0.1); padding: 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; border-left: 3px solid var(--accent-cyan); word-break: break-all;">
+                    📁 {{ path }}
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color: var(--text-muted); font-size: 0.9rem;">No active monitored directories configured. Click Start Protection Engine to watch default test directories.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Dashboard Trend Chart (Feature 13)
+    let trendChartInstance = null;
+    function initTrendChart() {
+        const ctx = document.getElementById('threatTrendChart');
+        if (!ctx) return;
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const textColor = currentTheme === 'light' ? '#475569' : '#94a3b8';
+        const gridColor = currentTheme === 'light' ? '#cbd5e1' : 'rgba(56, 189, 248, 0.15)';
+
+        if (trendChartInstance) trendChartInstance.destroy();
+
+        trendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', 'Now'],
+                datasets: [{
+                    label: 'Threat Telemetry Activity',
+                    data: [1, 0, 2, 1, 4, 3, {{ total_incidents }}],
+                    borderColor: '#00f3ff',
+                    backgroundColor: 'rgba(0, 243, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: textColor }, grid: { color: gridColor } }
+                }
+            }
+        });
+    }
+
+    window.refreshChartsTheme = function() {
+        initTrendChart();
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initTrendChart();
+        fetchAIInsights();
+        setInterval(fetchAIInsights, 15000);
+    });
+
+    async function fetchAIInsights() {
+        try {
+            const res = await fetch('/api/ai/insights');
+            const data = await res.json();
+            if (data.monitoring_health) {
+                document.getElementById('insight-health').textContent = data.monitoring_health;
+                document.getElementById('insight-ransomware').textContent = data.ransomware_status;
+                document.getElementById('insight-folder').textContent = data.most_active_folder;
+                document.getElementById('insight-ext').textContent = data.most_targeted_type;
+                document.getElementById('insight-entropy').textContent = data.highest_entropy_today;
+                document.getElementById('insight-trend').textContent = data.threat_trend;
+            }
+        } catch(e) {}
+    }
+</script>
+{% endblock %}

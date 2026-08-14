@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <h2>Active Process Explorer & Manual Quarantine</h2>
+    <p style="color: var(--text-secondary); font-size: 0.9rem;">Inspect system process tree metrics or execute immediate operator quarantine.</p>
+</div>
+
+<div class="table-wrapper">
+    <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color);">
+        <h3>Currently Running System Processes</h3>
+    </div>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>PID</th>
+                <th>PPID</th>
+                <th>Process Name</th>
+                <th>Executable Path</th>
+                <th>User</th>
+                <th>CPU %</th>
+                <th>RAM %</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for proc in processes[:30] %}
+            <tr>
+                <td>{{ proc.pid }}</td>
+                <td>{{ proc.ppid }}</td>
+                <td><strong>{{ proc.name }}</strong></td>
+                <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ proc.exe }}</td>
+                <td>{{ proc.username }}</td>
+                <td>{{ proc.cpu_percent }}%</td>
+                <td>{{ proc.memory_percent }}%</td>
+                <td>
+                    <button class="btn btn-danger" onclick="quarantineProcess({{ proc.pid }})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                        ⚔️ Terminate
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Quarantined History -->
+<div class="table-wrapper" style="margin-top: 2rem;">
+    <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color);">
+        <h3>Quarantine Execution History</h3>
+    </div>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>PID</th>
+                <th>Process Name</th>
+                <th>Reason</th>
+                <th>Quarantined File</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for q in quarantined %}
+            <tr>
+                <td>{{ q.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>{{ q.process_id }}</td>
+                <td>{{ q.process_name }}</td>
+                <td>{{ q.reason }}</td>
+                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">{{ q.quarantined_file_path or 'N/A' }}</td>
+                <td><span style="color: var(--accent-green);">{{ q.status }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No processes currently quarantined.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
