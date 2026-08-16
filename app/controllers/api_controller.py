@@ -64,6 +64,31 @@ class APIController:
         return jsonify([c.to_dict() for c in canaries]), 200
 
     @staticmethod
+    def delete_canaries() -> Tuple[Dict[str, Any], int]:
+        """
+        Marks all active canary files as inactive in the DB and deletes them safely from disk.
+        """
+        canaries = CanaryFile.query.filter_by(is_active=True).all()
+        deleted_count = 0
+        for canary in canaries:
+            canary.is_active = False
+            if canary.file_path and os.path.exists(canary.file_path):
+                try:
+                    os.remove(canary.file_path)
+                except Exception as e:
+                    logger.warning(f"Failed to remove canary file {canary.file_path} from disk: {e}")
+            deleted_count += 1
+
+        db.session.commit()
+        from app.websocket.events import broadcast_dashboard_update
+        broadcast_dashboard_update()
+        return jsonify({
+            'message': f'Successfully deactivated and deleted {deleted_count} canary files.',
+            'deleted_count': deleted_count
+        }), 200
+
+
+    @staticmethod
     def deploy_canaries() -> Tuple[Dict[str, Any], int]:
         data = request.get_json() or {}
         target_dir = data.get('directory', current_app.config['TEST_MONITOR_DIR'])
@@ -227,6 +252,11 @@ class APIController:
         return jsonify(insights), 200
 
     @staticmethod
+    def get_ai_status() -> Tuple[Dict[str, Any], int]:
+        key = os.environ.get('ANTHROPIC_API_KEY', '')
+        return jsonify({'llm_enabled': bool(key)}), 200
+
+    @staticmethod
     def download_pdf_report():
         from app.services.pdf_service import PDFService
         pdf_buffer = PDFService.generate_security_report()
@@ -271,40 +301,3 @@ class APIController:
             )
         else:
             return jsonify({'error': 'Invalid format. Use json or csv.'}), 400
-
-    @staticmethod
-    def trigger_presentation_demo() -> Tuple[Dict[str, Any], int]:
-        """
-        Feature 16 — Presentation Demo mode trigger.
-        Simulates canary breach, calculates AI score, creates incident, and updates live sockets.
-        """
-        import random
-        from datetime import datetime
-        test_file = os.path.join(current_app.config['TEST_MONITOR_DIR'], "Confidential_Report.docx")
-        
-        inc = Incident(
-            threat_level='CRITICAL',
-            file_path=test_file,
-            canary_triggered=True,
-            entropy_value=7.85,
-            process_id=random.randint(2000, 9999),
-            process_name="ransom_simulator.exe",
-            action_taken="QUARANTINED",
-            status="ACTIVE",
-            confidence_score=92.0,
-            description="Demo Presentation Ransomware Breach Triggered: Decoy file encrypted with high entropy."
-        )
-        db.session.add(inc)
-        db.session.commit()
-
-        from app.websocket.events import broadcast_dashboard_update, broadcast_alert
-        broadcast_dashboard_update()
-        broadcast_alert({
-            'title': 'Ransomware Canary Triggered!',
-            'message': f'Canary breach on {test_file}. Process ransom_simulator.exe quarantined.',
-            'level': 'CRITICAL',
-            'incident_id': inc.id
-        })
-
-        return jsonify({'message': 'Demo trigger executed successfully', 'incident_id': inc.id}), 200
-

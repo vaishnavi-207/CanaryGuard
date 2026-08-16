@@ -35,19 +35,20 @@
                 <td>{{ proc.memory_percent }}%</td>
                 <td>
                     <button class="btn btn-danger" onclick="quarantineProcess({{ proc.pid }})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
-                        ⚔️ Terminate
+                        Quarantine
                     </button>
                 </td>
             </tr>
+            {% else %}
+            <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No system processes retrieved.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 
-<!-- Quarantined History -->
 <div class="table-wrapper" style="margin-top: 2rem;">
     <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color);">
-        <h3>Quarantine Execution History</h3>
+        <h3>Quarantined Process History</h3>
     </div>
     <table class="custom-table">
         <thead>
@@ -63,7 +64,7 @@
         <tbody>
             {% for q in quarantined %}
             <tr>
-                <td>{{ q.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>{{ q.created_at.strftime('%d %b %Y %I:%M %p') if q.created_at else 'N/A' }}</td>
                 <td>{{ q.process_id }}</td>
                 <td>{{ q.process_name }}</td>
                 <td>{{ q.reason }}</td>

@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database.db import db
 from app.models.canary_file import CanaryFile
 from app.logging.logger import get_security_logger, get_error_logger
@@ -126,7 +126,7 @@ class CanaryDeploymentEngine:
         # Check if deleted or modified
         if not os.path.exists(file_path):
             canary.trigger_count += 1
-            canary.last_triggered_at = datetime.utcnow()
+            canary.last_triggered_at = datetime.now(timezone.utc)
             canary.is_active = False
             db.session.commit()
             
@@ -143,7 +143,7 @@ class CanaryDeploymentEngine:
         if new_hash != canary.original_hash:
             canary.current_hash = new_hash
             canary.trigger_count += 1
-            canary.last_triggered_at = datetime.utcnow()
+            canary.last_triggered_at = datetime.now(timezone.utc)
             db.session.commit()
 
             logger.warning(f"CANARY MODIFIED TRIGGERED: {file_path}")

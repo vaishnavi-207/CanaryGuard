@@ -1,7 +1,16 @@
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from datetime import datetime, timezone, timedelta
 from config import Config
+
+IST = timezone(timedelta(hours=5, minutes=30))
+
+class ISTFormatter(logging.Formatter):
+    """Custom logging formatter that formats record timestamps in IST (UTC+5:30)."""
+    def formatTime(self, record, datefmt=None):
+        dt = datetime.fromtimestamp(record.created, tz=IST)
+        return dt.strftime('%Y-%m-%d %H:%M:%S IST')
 
 class CanaryLogger:
     """Multi-channel structured logging system for CanaryGuard."""
@@ -24,10 +33,9 @@ class CanaryLogger:
         logger.propagate = False
 
         if not logger.handlers:
-            # Formatting
-            formatter = logging.Formatter(
-                '[%(asctime)s] [%(levelname)s] [%(name)s] - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
+            # Formatting in IST
+            formatter = ISTFormatter(
+                '[%(asctime)s] [%(levelname)s] [%(name)s] - %(message)s'
             )
 
             # Rotating File Handler (10MB max per file, keep 5 backups)

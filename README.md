@@ -11,11 +11,13 @@
 
 ## Key Features
 
+- **🛡️ Ransomware Readiness Assessment (NIST CSF)**: Evaluates enterprise ransomware preparedness across 32 security controls in 6 NIST Cybersecurity Framework domains (`IDENTIFY`, `PROTECT`, `DETECT`, `RESPOND`, `RECOVER`, `PEOPLE`). Features weighted maturity scoring (0-100%), auto-detection from live CanaryGuard EDR telemetry, interactive radar charts, and downloadable executive 7-page PDF reports.
 - **Decoy Canary Files Engine**: Automatically generates and deploys hidden decoy files (`Confidential_Report.docx`, `Payroll.xlsx`, `Employee_Database.pdf`, etc.) across target directories. Any modification or deletion instantly triggers high-severity alerts.
 - **Shannon Entropy Engine**: Computes real-time byte entropy ($H(X) = -\sum p(x) \log_2 p(x)$) on file events. High entropy (> 7.2) strongly indicates active encryption payloads.
 - **Behavioral Detection Matrix**: Combines canary triggers, entropy spikes, burst modification rates, and process metadata into a multi-factor confidence score.
 - **Process Identification & Automatic Quarantine Engine**: Utilizes `psutil` to trace file activity to active PIDs. Automatically freezes execution, recursively terminates process trees, and isolates tampered files into `quarantine_store/`.
 - **Cyberpunk SOC Real-Time Dashboard**: Modern, dark-themed responsive UI with WebSocket live threat alerts, process explorer, directory monitoring controls, log viewer, and analytics.
+- **Optional Claude AI Integration**: Built-in AI Security Assistant powered by optional Anthropic Claude API integration (`claude-haiku-4-5`) with automated rule-based fallback for concise incident breakdown and interactive security advice.
 
 ---
 
@@ -25,21 +27,23 @@
 CanaryGuard/
 ├── app/
 │   ├── canary/          # Canary decoy generation & verification
-│   ├── controllers/     # REST API business logic
+│   ├── configuration/   # Assessment control definitions & rules
+│   ├── controllers/     # REST API & Assessment business controllers
 │   ├── database/        # SQLAlchemy ORM database initialization
 │   ├── entropy/         # Shannon Entropy engine
 │   ├── logging/         # Structured multi-channel rotating logging
 │   ├── models/          # 13 relational database models
 │   ├── monitoring/      # Watchdog real-time file monitor
 │   ├── quarantine/      # Process termination & file isolation
-│   ├── routes/          # Flask blueprints for UI & REST API
-│   ├── services/        # Process identification & detection scoring
+│   ├── routes/          # Flask blueprints for UI, REST API, & Assessment
+│   ├── security/        # Authentication & route protection decorators
+│   ├── services/        # EDR scoring, Assessment engine, & PDF generator
 │   └── websocket/       # Flask-SocketIO event streaming
 ├── database/            # SQLite storage
 ├── docs/                # Complete technical & academic documentation
 ├── logs/                # Rotating logs (system, security, error, entropy)
 ├── static/              # Dark cybersecurity CSS & client JS
-├── templates/           # Jinja2 HTML dashboard templates
+├── templates/           # Jinja2 HTML dashboard & assessment templates
 ├── tests/               # Pytest suite
 ├── config.py            # Modular configuration system
 ├── app.py / run.py      # Entrypoints

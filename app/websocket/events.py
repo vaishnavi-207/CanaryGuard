@@ -23,23 +23,32 @@ def register_socket_events(socketio_instance: SocketIO):
 
 def broadcast_threat_alert(payload: Dict[str, Any]):
     """Broadcast real-time threat alert to all connected dashboard clients."""
-    socketio.emit('threat_alert', payload)
+    try:
+        socketio.emit('threat_alert', payload, namespace='/')
+    except Exception:
+        pass
 
 def broadcast_monitoring_status(status_payload: Dict[str, Any]):
     """Broadcast monitor status change."""
-    socketio.emit('monitoring_status', status_payload)
+    try:
+        socketio.emit('monitoring_status', status_payload, namespace='/')
+    except Exception:
+        pass
 
 def broadcast_dashboard_update(data: Optional[Dict[str, Any]] = None):
     """Broadcast dashboard metric updates."""
-    if data is None:
-        from app.models.incident import Incident
-        from app.models.canary_file import CanaryFile
-        from app.models.quarantine_history import QuarantineHistory
+    try:
+        if data is None:
+            from app.models.incident import Incident
+            from app.models.canary_file import CanaryFile
+            from app.models.quarantine_history import QuarantineHistory
 
-        data = {
-            'total_incidents': Incident.query.count(),
-            'active_incidents': Incident.query.filter_by(status='ACTIVE').count(),
-            'canary_count': CanaryFile.query.filter_by(is_active=True).count(),
-            'quarantine_count': QuarantineHistory.query.count()
-        }
-    socketio.emit('dashboard_update', data)
+            data = {
+                'total_incidents': Incident.query.count(),
+                'active_incidents': Incident.query.filter_by(status='ACTIVE').count(),
+                'canary_count': CanaryFile.query.filter_by(is_active=True).count(),
+                'quarantine_count': QuarantineHistory.query.count()
+            }
+        socketio.emit('dashboard_update', data, namespace='/')
+    except Exception:
+        pass

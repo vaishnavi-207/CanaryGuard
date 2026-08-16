@@ -61,6 +61,14 @@
         </div>
         <div class="card-value" id="stat-quarantine-count" style="color: var(--accent-cyan);">{{ quarantine_count }}</div>
     </div>
+
+    <div class="card" onclick="window.location='/readiness-assessment'" style="cursor:pointer;" id="readiness-score-card">
+        <div class="card-header-sm">
+            <span class="card-title-sm">Readiness Score</span>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);" id="readiness-score-level">Loading...</span>
+        </div>
+        <div class="card-value" id="readiness-score-value">—</div>
+    </div>
 </div>
 
 <!-- Feature 6 AI Security Insights Card & Features 12 & 13 Charts Grid -->
@@ -116,7 +124,7 @@
                 {% if active_incidents %}
                     {% for inc in active_incidents[:10] %}
                     <tr>
-                        <td>{{ inc.created_at.strftime('%H:%M:%S') }}</td>
+                        <td>{{ inc.created_at.strftime('%d %b %Y %I:%M %p IST') if inc.created_at else 'N/A' }}</td>
                         <td>
                             <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; background: {% if inc.threat_level == 'CRITICAL' %}rgba(239, 68, 68, 0.2){% else %}rgba(245, 158, 11, 0.2){% endif %}; color: {% if inc.threat_level == 'CRITICAL' %}var(--accent-red){% else %}var(--accent-yellow){% endif %};">
                                 {{ inc.threat_level }}
@@ -200,6 +208,7 @@
         initTrendChart();
         fetchAIInsights();
         setInterval(fetchAIInsights, 15000);
+        loadReadinessScore();
     });
 
     async function fetchAIInsights() {
@@ -215,6 +224,33 @@
                 document.getElementById('insight-trend').textContent = data.threat_trend;
             }
         } catch(e) {}
+    }
+
+    async function loadReadinessScore() {
+        try {
+            const res = await fetch('/api/assessment/history');
+            const data = await res.json();
+            if (data && data.length > 0) {
+                const latest = data[0];
+                document.getElementById('readiness-score-value')
+                    .textContent = latest.overall_score.toFixed(1) + '%';
+                document.getElementById('readiness-score-level')
+                    .textContent = latest.maturity_level;
+                const val = latest.overall_score;
+                const el = document.getElementById('readiness-score-value');
+                if (val >= 70) el.style.color = 'var(--accent-green, #16a34a)';
+                else if (val >= 40) el.style.color = 'var(--accent-yellow, #d97706)';
+                else el.style.color = 'var(--accent-red, #dc2626)';
+            } else {
+                document.getElementById('readiness-score-value')
+                    .textContent = 'N/A';
+                document.getElementById('readiness-score-level')
+                    .textContent = 'Run Assessment';
+            }
+        } catch(e) {
+            document.getElementById('readiness-score-level')
+                .textContent = 'Unavailable';
+        }
     }
 </script>
 {% endblock %}

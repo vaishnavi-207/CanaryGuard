@@ -1,11 +1,12 @@
 from typing import Dict, Any, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.database.db import db
 from app.models.incident import Incident
 from app.models.alert import Alert
 from app.models.entropy_log import EntropyLog
 from app.models.threat_statistics import ThreatStatistics
+from app.models.quarantine_history import QuarantineHistory
 from app.quarantine.quarantine_engine import ProcessQuarantineEngine
 from app.logging.logger import get_security_logger, get_error_logger
 
@@ -107,7 +108,7 @@ class BehavioralDetectionEngine:
             db.session.add(alert)
 
         # Update Daily Threat Statistics
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         stats = ThreatStatistics.query.filter_by(record_date=today).first()
         if not stats:
             stats = ThreatStatistics(
@@ -129,6 +130,25 @@ class BehavioralDetectionEngine:
             stats.processes_quarantined = (stats.processes_quarantined or 0) + 1
 
         db.session.commit()
+
+        # Ensure QuarantineHistory record exists if action_taken was QUARANTINED without process PID (e.g. fallback)
+        if action_taken == 'QUARANTINED' and not event_data.get('pid'):
+            try:
+                q_fallback = QuarantineHistory(
+                    process_id=0,
+                    process_name=event_data.get('process_name') or 'Unknown',
+                    executable_path='Unknown',
+                    target_file_path=event_data['src_path'] or 'Unknown',
+                    quarantined_file_path=None,
+                    reason=" | ".join(reasons) if reasons else 'Automated quarantine triggered by behavioral detection',
+                    threat_score=confidence_score or 0.0,
+                    status='SUCCESS'
+                )
+                db.session.add(q_fallback)
+                db.session.commit()
+            except Exception as e:
+                logger.error(f'QuarantineHistory insert failed: {e}')
+                db.session.rollback()
 
         return {
             'incident_id': incident.id,

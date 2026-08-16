@@ -1,41 +1,45 @@
 // CanaryGuard Socket.IO Client Gateway
-const socket = io();
+if (typeof io === 'undefined') {
+    console.warn('Socket.IO not loaded - real-time updates disabled.');
+} else {
+    const socket = io();
 
-socket.on('connect', () => {
-    console.log('[CanaryGuard WS] Connected to backend gateway.');
-});
+    socket.on('connect', () => {
+        console.log('[CanaryGuard WS] Connected to backend gateway.');
+    });
 
-socket.on('disconnect', () => {
-    console.warn('[CanaryGuard WS] Disconnected from server. Reconnecting...');
-});
+    socket.on('disconnect', () => {
+        console.warn('[CanaryGuard WS] Disconnected from server. Reconnecting...');
+    });
 
-socket.on('threat_alert', (payload) => {
-    console.warn('[CanaryGuard Threat Alert]', payload);
-    showToastNotification(payload);
-    appendIncidentToTable(payload);
-    if (typeof refreshDashboardMetrics === 'function') {
-        refreshDashboardMetrics();
-    }
-});
+    socket.on('threat_alert', (payload) => {
+        console.warn('[CanaryGuard Threat Alert]', payload);
+        showToastNotification(payload);
+        appendIncidentToTable(payload);
+        if (typeof refreshDashboardMetrics === 'function') {
+            refreshDashboardMetrics();
+        }
+    });
 
-socket.on('dashboard_update', (data) => {
-    console.log('[CanaryGuard WS] Dashboard update received:', data);
-    const canaryCountEl = document.getElementById('stat-canary-count');
-    if (canaryCountEl && data.canary_count !== undefined) {
-        canaryCountEl.textContent = data.canary_count;
-    }
-    const totalIncidentsEl = document.getElementById('stat-total-incidents');
-    if (totalIncidentsEl && data.total_incidents !== undefined) {
-        totalIncidentsEl.textContent = data.total_incidents;
-    }
-    const quarantineCountEl = document.getElementById('stat-quarantine-count');
-    if (quarantineCountEl && data.quarantine_count !== undefined) {
-        quarantineCountEl.textContent = data.quarantine_count;
-    }
-    if (typeof refreshDashboardMetrics === 'function') {
-        refreshDashboardMetrics();
-    }
-});
+    socket.on('dashboard_update', (data) => {
+        console.log('[CanaryGuard WS] Dashboard update received:', data);
+        const canaryCountEl = document.getElementById('stat-canary-count');
+        if (canaryCountEl && data.canary_count !== undefined) {
+            canaryCountEl.textContent = data.canary_count;
+        }
+        const totalIncidentsEl = document.getElementById('stat-total-incidents');
+        if (totalIncidentsEl && data.total_incidents !== undefined) {
+            totalIncidentsEl.textContent = data.total_incidents;
+        }
+        const quarantineCountEl = document.getElementById('stat-quarantine-count');
+        if (quarantineCountEl && data.quarantine_count !== undefined) {
+            quarantineCountEl.textContent = data.quarantine_count;
+        }
+        if (typeof refreshDashboardMetrics === 'function') {
+            refreshDashboardMetrics();
+        }
+    });
+}
 
 function appendIncidentToTable(payload) {
     const tbody = document.querySelector('.custom-table tbody');

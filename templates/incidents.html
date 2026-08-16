@@ -1,25 +1,23 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
     <div>
-        <h2>Incident History & AI Forensic Telemetry</h2>
-        <p style="color: var(--text-secondary); font-size: 0.9rem;">Comprehensive log of all security alerts, ransomware behavioral detections, and response actions.</p>
-    </div>
-    <!-- Export Options (Feature 14) -->
-    <div style="display: flex; gap: 0.5rem;">
-        <a href="/api/export/csv" class="btn btn-secondary" style="font-size: 0.8rem;">📥 Export CSV</a>
-        <a href="/api/export/json" class="btn btn-secondary" style="font-size: 0.8rem;">📥 Export JSON</a>
-        <a href="/api/reports/pdf" target="_blank" class="btn btn-primary" style="font-size: 0.8rem;">📄 Export PDF Report</a>
+        <h2>Security Incidents & AI Analysis Log</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Historical log of ransomware alerts, canary triggers, and automated quarantine events.</p>
     </div>
 </div>
 
 <div class="table-wrapper">
+    <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <h3>Recorded Incidents</h3>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Showing {{ incidents|length }} incidents</span>
+    </div>
     <table class="custom-table">
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Created At</th>
+                <th>Timestamp</th>
                 <th>Threat Level</th>
                 <th>File Path</th>
                 <th>Canary Hit</th>
@@ -34,7 +32,7 @@
             {% for inc in incidents %}
             <tr>
                 <td>#{{ inc.id }}</td>
-                <td>{{ inc.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>{{ inc.created_at.strftime('%d %b %Y %I:%M %p IST') if inc.created_at else 'N/A' }}</td>
                 <td>
                     <span style="font-weight: bold; color: {% if inc.threat_level == 'CRITICAL' %}var(--accent-red){% else %}var(--accent-yellow){% endif %};">
                         {{ inc.threat_level }}
@@ -43,27 +41,35 @@
                 <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ inc.file_path }}</td>
                 <td>{% if inc.canary_triggered %}⚠️ YES{% else %}NO{% endif %}</td>
                 <td>{{ "%.2f"|format(inc.entropy_value) if inc.entropy_value else '0.0' }}</td>
-                <td>{{ inc.process_name or 'Unknown' }} ({{ inc.process_id or '?' }})</td>
-                <td><strong>{{ inc.action_taken }}</strong></td>
+                <td>{{ inc.process_name or 'N/A' }} (PID: {{ inc.process_id or '?' }})</td>
+                <td><span style="color: var(--accent-green);">{{ inc.action_taken }}</span></td>
                 <td>
-                    <a href="/incidents/{{ inc.id }}" class="btn btn-primary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">AI Breakdown →</a>
+                    <a href="/incidents/{{ inc.id }}" class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
+                        View AI Breakdown →
+                    </a>
                 </td>
                 <td>
-                    <button class="btn btn-danger" onclick="deleteIncident({{ inc.id }})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Delete</button>
+                    <button class="btn btn-secondary" onclick="deleteIncident({{ inc.id }})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; color: var(--accent-red);">
+                        Delete
+                    </button>
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="10" style="text-align: center; color: var(--text-muted);">No incident records stored.</td></tr>
+            <tr><td colspan="10" style="text-align: center; color: var(--text-muted);">No security incidents recorded. System is operating safely.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 async function deleteIncident(id) {
-    if (!confirm('Are you sure you want to delete this incident record?')) return;
+    if (!confirm(`Delete incident record #${id}?`)) return;
     const res = await fetch(`/api/incidents/${id}`, { method: 'DELETE' });
-    if (res.ok) window.location.reload();
+    const data = await res.json();
+    alert(data.message || 'Incident deleted');
+    window.location.reload();
 }
 </script>
 {% endblock %}

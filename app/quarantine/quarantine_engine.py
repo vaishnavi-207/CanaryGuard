@@ -88,28 +88,37 @@ class ProcessQuarantineEngine:
             except Exception as e:
                 error_logger.error(f"Failed to isolate file {target_file}: {e}")
 
-        # 5. Persist Quarantine History Record
-        q_record = QuarantineHistory(
-            process_id=pid,
-            process_name=proc_name,
-            executable_path=exe_path,
-            target_file_path=target_file,
-            quarantined_file_path=result['quarantined_file'],
-            reason=reason,
-            threat_score=1.0,
-            status='QUARANTINED' if result['terminated'] else 'FAILED'
-        )
-        db.session.add(q_record)
+        # 5. Persist Quarantine History Record safely wrapped in try/except
+        try:
+            q_record = QuarantineHistory(
+                process_id=pid,
+                process_name=proc_name or 'Unknown',
+                executable_path=exe_path or 'Unknown',
+                target_file_path=target_file or 'Unknown',
+                quarantined_file_path=result['quarantined_file'],
+                reason=reason or 'Automated quarantine triggered by behavioral detection',
+                threat_score=1.0,
+                status='SUCCESS' if result['terminated'] else 'FAILED'
+            )
+            db.session.add(q_record)
+            db.session.commit()
+        except Exception as e:
+            logger.error(f"QuarantineHistory insert failed: {e}")
+            db.session.rollback()
 
-        # 6. Create Alert Record
-        alert = Alert(
-            alert_type='QUARANTINE_EXECUTED',
-            severity='CRITICAL',
-            title=f"Quarantine Executed on {proc_name} (PID: {pid})",
-            message=f"Terminated malicious process PID {pid} ({proc_name}). Reason: {reason}",
-            source='ProcessQuarantineEngine'
-        )
-        db.session.add(alert)
-        db.session.commit()
+        # 6. Create Alert Record safely
+        try:
+            alert = Alert(
+                alert_type='QUARANTINE_EXECUTED',
+                severity='CRITICAL',
+                title=f"Quarantine Executed on {proc_name} (PID: {pid})",
+                message=f"Terminated malicious process PID {pid} ({proc_name}). Reason: {reason}",
+                source='ProcessQuarantineEngine'
+            )
+            db.session.add(alert)
+            db.session.commit()
+        except Exception as e:
+            logger.error(f"Alert insert failed: {e}")
+            db.session.rollback()
 
         return result

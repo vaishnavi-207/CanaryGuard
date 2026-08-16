@@ -12,6 +12,10 @@ from app.models.dashboard_event import DashboardEvent
 from app.models.security_policy import SecurityPolicy
 from app.models.monitored_folder import MonitoredFolder
 from app.models.alert import Alert
+from app.models.assessment import Assessment
+from app.models.assessment_domain import AssessmentDomain
+from app.models.assessment_control import AssessmentControl
+from app.models.assessment_run_history import AssessmentRunHistory
 
 __all__ = [
     'BaseModel',
@@ -27,5 +31,9 @@ __all__ = [
     'DashboardEvent',
     'SecurityPolicy',
     'MonitoredFolder',
-    'Alert'
+    'Alert',
+    'Assessment',
+    'AssessmentDomain',
+    'AssessmentControl',
+    'AssessmentRunHistory'
 ]

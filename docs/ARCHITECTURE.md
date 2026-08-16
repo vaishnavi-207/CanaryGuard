@@ -17,13 +17,13 @@ CanaryGuard uses a **Modular Layered Architecture**:
                            v
 +-------------------------------------------------------+
 |                 Business Logic Layer                  |
-|    (Behavioral Detection Engine, API Controllers)     |
+|   (Behavioral Detection Engine, Assessment Controller)|
 +-------------------------------------------------------+
           /                |                \
          v                 v                 v
-+-----------------+ +----------------+ +----------------+
-|  Entropy Engine | | Canary Engine  | | Process Service|
-+-----------------+ +----------------+ +----------------+
++-----------------+ +----------------+ +--------------------+
+|  Entropy Engine | | Canary Engine  | | Assessment Service |
++-----------------+ +----------------+ +--------------------+
          \                 |                 /
           v                v                v
 +-------------------------------------------------------+
@@ -44,3 +44,14 @@ CanaryGuard uses a **Modular Layered Architecture**:
 3. **Behavioral Detection Engine** computes a unified confidence score (0-100%).
 4. If score exceeds threshold, **Process Quarantine Engine** suspends and kills the responsible PID via `psutil`.
 5. **WebSocket Gateway** broadcasts instant alerts to connected dashboard clients.
+
+## Assessment Module Flow
+
+```
+Assessment Controller -> Assessment Service -> Assessment Models (Assessment, AssessmentDomain, AssessmentControl, AssessmentRunHistory) -> PDF Service -> Download Response
+```
+
+- **Assessment Controller**: Receives assessment creation, step navigation, submission, and PDF export requests.
+- **Assessment Service**: Executes control library initialization, auto-detects EDR telemetry metrics, computes weighted domain scores, and derives NIST maturity tiers.
+- **Assessment Models**: `Assessment`, `AssessmentDomain`, `AssessmentControl`, and `AssessmentRunHistory` persist evaluation snapshots to SQLite via SQLAlchemy ORM.
+- **PDF Service**: Formats comprehensive executive Readiness Assessment reports via ReportLab and streams binary PDF data back to browser clients.

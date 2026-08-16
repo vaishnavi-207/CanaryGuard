@@ -57,18 +57,46 @@ def create_app(config_name: str = "development") -> Flask:
     # Register Blueprints
     from app.routes.main_routes import main_bp
     from app.routes.api_routes import api_bp
+    from app.routes.auth_routes import auth_bp
+    from app.routes.assessment_routes import assessment_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(assessment_bp)
 
-    # Create database tables
+    # Create database tables & seed initial data
     with app.app_context():
         db.create_all()
+        seed_default_admin_user()
         seed_default_settings()
 
     logger.info("CanaryGuard Application Initialized Successfully.")
 
     return app
+
+
+def seed_default_admin_user():
+    """Auto-create default admin user (admin / CanaryGuard2025!) if no users exist."""
+    from app.models.user import User
+    from app.routes.auth_routes import hash_password
+
+    if User.query.count() == 0:
+        hashed = hash_password("CanaryGuard2025!")
+        admin_user = User(
+            username="admin",
+            email="admin@canaryguard.local",
+            password_hash=hashed,
+            role="admin",
+            is_active=True
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print("\n=======================================================")
+        print("[+] Default admin user created:")
+        print("    Username: admin")
+        print("    Password: CanaryGuard2025!")
+        print("=======================================================\n")
 
 
 def seed_default_settings():

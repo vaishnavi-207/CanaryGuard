@@ -1,30 +1,34 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="margin-bottom: 1.5rem;">
-    <h2>Monitored Directories Manager</h2>
-    <p style="color: var(--text-secondary); font-size: 0.9rem;">Add or review target folder paths under real-time Watchdog observation.</p>
+<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h2>Monitored Folders & Canary Target Locations</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Manage local and network directory paths under real-time Watchdog behavioral protection.</p>
+    </div>
 </div>
 
-<!-- Add Folder Form -->
-<div class="card" style="margin-bottom: 2rem;">
-    <h3 style="margin-bottom: 1rem;">Add Directory to Watchlist</h3>
-    <form id="form-add-folder" style="display: flex; gap: 1rem;">
-        <input type="text" id="input-folder-path" placeholder="Enter absolute folder path e.g. C:\Users\HP\OneDrive\Desktop\CanaryGuard\monitored_test" style="flex-grow: 1; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.5); color: #fff; font-family: var(--font-mono);" required>
-        <button type="submit" class="btn btn-primary">➕ Add Folder</button>
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Add New Monitored Folder</h3>
+    <form id="add-folder-form" style="display: flex; gap: 1rem;">
+        <input type="text" id="folder-path-input" placeholder="e.g. C:\Users\Public\Documents or /home/user/docs" class="form-input" style="flex-grow: 1;" required>
+        <button type="submit" class="btn btn-primary">➕ Add Directory</button>
     </form>
 </div>
 
 <div class="table-wrapper">
+    <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color);">
+        <h3>Active Monitored Directories</h3>
+    </div>
     <table class="custom-table">
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Folder Path</th>
+                <th>Directory Path</th>
                 <th>Status</th>
                 <th>Recursive</th>
                 <th>Canaries Deployed</th>
-                <th>Created At</th>
+                <th>Added At</th>
             </tr>
         </thead>
         <tbody>
@@ -39,7 +43,7 @@
                 </td>
                 <td>{{ f.recursive }}</td>
                 <td>{{ f.canaries_deployed }}</td>
-                <td>{{ f.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>{{ f.created_at.strftime('%d %b %Y %I:%M %p') if f.created_at else 'N/A' }}</td>
             </tr>
             {% else %}
             <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No monitored folders configured yet.</td></tr>
@@ -48,17 +52,22 @@
     </table>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
 <script>
-document.getElementById('form-add-folder').addEventListener('submit', async (e) => {
+document.getElementById('add-folder-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const folderPath = document.getElementById('input-folder-path').value;
+    const pathInput = document.getElementById('folder-path-input').value.trim();
+    if (!pathInput) return;
+
     const res = await fetch('/api/monitored-folders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder_path: folderPath })
+        body: JSON.stringify({ folder_path: pathInput })
     });
     const data = await res.json();
-    alert(data.message || 'Folder added');
+    alert(data.message || 'Folder processed');
     window.location.reload();
 });
 </script>

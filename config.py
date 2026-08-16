@@ -1,5 +1,9 @@
 import os
 from pathlib import Path
+
+# Set default timezone to IST
+os.environ['TZ'] = 'Asia/Kolkata'
+
 try:
     from dotenv import load_dotenv
     load_dotenv()

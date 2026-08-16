@@ -1,0 +1,849 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="assessment-container" style="max-width: 1200px; margin: 0 auto;">
+
+    <!-- Alert / Toast Banner for Error Messages -->
+    <div id="assessment-error-alert" class="alert-error" style="display: none; margin-bottom: 1.5rem;"></div>
+
+    <!-- ====================================================================== -->
+    <!-- VIEW 1: START / ORG INFO FORM -->
+    <!-- ====================================================================== -->
+    <div id="view-1-start" class="assessment-view">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+            <div>
+                <h2>Ransomware Readiness Assessment</h2>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.25rem;">
+                    Evaluate your enterprise posture against modern ransomware vectors using NIST CSF and CIS Controls.
+                </p>
+            </div>
+            <button class="btn btn-secondary" onclick="loadAssessmentHistory()" style="font-size: 0.85rem;">
+                📜 View Past Audits
+            </button>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-color);">
+            <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                <div style="font-size: 2.2rem; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    🛡️
+                </div>
+                <div>
+                    <h3 style="font-size: 1.15rem; color: var(--text-primary);">NIST Cybersecurity Framework (CSF) Audit</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.2rem;">
+                        This interactive assessment measures maturity across 6 core security domains: 
+                        <strong style="color: var(--accent-cyan);">IDENTIFY</strong>, 
+                        <strong style="color: var(--accent-blue);">PROTECT</strong>, 
+                        <strong style="color: var(--accent-green);">DETECT</strong>, 
+                        <strong style="color: var(--accent-yellow);">RESPOND</strong>, 
+                        <strong style="color: var(--accent-red);">RECOVER</strong>, and 
+                        <strong style="color: var(--accent-purple);">PEOPLE</strong>.
+                    </p>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 1rem; font-size: 0.85rem; background: rgba(8, 12, 20, 0.5); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div>⚡ <strong>Auto-Detection:</strong> Live EDR telemetry integrated</div>
+                <div>📊 <strong>Maturity Curve:</strong> Initial (0%) → Optimized (100%)</div>
+                <div>📄 <strong>Reporting:</strong> Executive PDF & Gap Remediation Tips</div>
+            </div>
+        </div>
+
+        <!-- Org Metadata Form -->
+        <div class="card" style="max-width: 650px; margin: 0 auto; padding: 2rem;">
+            <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                Organization & Assessor Setup
+            </h3>
+            
+            <form id="start-assessment-form" onsubmit="handleStartAssessment(event)">
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                        Organization Name *
+                    </label>
+                    <input type="text" id="input_org_name" class="form-input" placeholder="e.g. Acme Corporation" required style="width: 100%; padding: 0.75rem; background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Organization Size *
+                        </label>
+                        <select id="input_org_size" class="form-input" required style="width: 100%; padding: 0.75rem; background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                            <option value="small">Small (&lt; 50 employees)</option>
+                            <option value="medium" selected>Medium (50 - 250 employees)</option>
+                            <option value="large">Large (250 - 1000 employees)</option>
+                            <option value="enterprise">Enterprise (&gt; 1000 employees)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Industry Sector *
+                        </label>
+                        <select id="input_industry" class="form-input" required style="width: 100%; padding: 0.75rem; background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                            <option value="Financial Services">Financial Services & Banking</option>
+                            <option value="Healthcare">Healthcare & Life Sciences</option>
+                            <option value="Technology & Software" selected>Technology & Software</option>
+                            <option value="Manufacturing">Manufacturing & Industrial</option>
+                            <option value="Government & Defense">Government & Public Sector</option>
+                            <option value="Education">Education & Academia</option>
+                            <option value="Energy & Utilities">Energy & Utilities</option>
+                            <option value="Retail & E-Commerce">Retail & E-Commerce</option>
+                            <option value="Other">Other / General Commercial</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.75rem;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                        Assessor / Lead Auditor Name *
+                    </label>
+                    <input type="text" id="input_assessor_name" class="form-input" placeholder="e.g. Chief Information Security Officer" required style="width: 100%; padding: 0.75rem; background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                </div>
+
+                <button type="submit" id="btn-start-submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                    <span id="start-btn-text">🚀 Begin Assessment Questionnaire</span>
+                    <span id="start-btn-spinner" style="display: none;">⌛ Initializing Framework...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ====================================================================== -->
+    <!-- VIEW 2: QUESTIONNAIRE (DOMAIN BY DOMAIN) -->
+    <!-- ====================================================================== -->
+    <div id="view-2-questionnaire" class="assessment-view" style="display: none;">
+        <!-- Top Domain Stepper & Progress Bar -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div>
+                    <span id="q-domain-step-label" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-cyan); font-weight: 700;">
+                        Domain 1 of 6
+                    </span>
+                    <h2 id="q-domain-title" style="font-size: 1.35rem; margin-top: 0.2rem; color: var(--text-primary);">
+                        Asset & Risk Identification
+                    </h2>
+                </div>
+                <div style="text-align: right;">
+                    <span id="q-progress-percent" style="font-size: 1.2rem; font-weight: 800; color: var(--accent-cyan);">16%</span>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Overall Completion</div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div style="width: 100%; height: 8px; background: rgba(8, 12, 20, 0.8); border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color);">
+                <div id="q-progress-bar-fill" style="width: 16%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue)); transition: width 0.4s ease;"></div>
+            </div>
+        </div>
+
+        <!-- Controls List Container -->
+        <div id="controls-list-container" style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 2rem;">
+            <!-- Rendered via JS -->
+        </div>
+
+        <!-- Bottom Navigation Controls -->
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem;">
+            <button id="btn-prev-domain" class="btn btn-secondary" onclick="navigateDomain(-1)" style="font-size: 0.9rem;">
+                ← Previous Domain
+            </button>
+
+            <span id="q-footer-domain-counter" style="font-size: 0.85rem; color: var(--text-secondary);">
+                Domain 1 of 6
+            </span>
+
+            <button id="btn-next-domain" class="btn btn-primary" onclick="navigateDomain(1)" style="font-size: 0.95rem; font-weight: 700; padding: 0.6rem 1.5rem;">
+                Next Domain →
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ====================================================================== -->
+    <!-- VIEW 3: SCORING / RESULTS -->
+    <!-- ====================================================================== -->
+    <div id="view-3-results" class="assessment-view" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <h2>Ransomware Readiness Posture Results</h2>
+                <p id="res-org-subtitle" style="color: var(--text-secondary); font-size: 0.9rem;">
+                    Executive evaluation for Acme Corp (Medium Technology & Software)
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+                <button class="btn btn-primary" onclick="downloadPdfReport()" style="font-size: 0.85rem;">
+                    📄 Download PDF Report
+                </button>
+                <button class="btn btn-secondary" onclick="loadAssessmentHistory()" style="font-size: 0.85rem;">
+                    📜 View Audit History
+                </button>
+                <button class="btn btn-secondary" onclick="resetToStart()" style="font-size: 0.85rem;">
+                    🔄 New Audit
+                </button>
+            </div>
+        </div>
+
+        <!-- Score Overview Cards Grid -->
+        <div class="grid-cards" style="margin-bottom: 1.5rem;">
+            <!-- Overall Score Card -->
+            <div class="card">
+                <div class="card-header-sm">
+                    <span class="card-title-sm">Overall Maturity Score</span>
+                    <span>📊</span>
+                </div>
+                <div id="res-overall-score-val" class="card-value" style="font-size: 2.2rem; color: var(--accent-cyan);">
+                    0.0%
+                </div>
+                <div style="width: 100%; height: 6px; background: rgba(8,12,20,0.6); border-radius: 3px; overflow: hidden; margin-top: 0.5rem;">
+                    <div id="res-overall-score-bar" style="width: 0%; height: 100%; background: var(--accent-cyan); transition: width 0.6s ease;"></div>
+                </div>
+            </div>
+
+            <!-- Maturity Level Badge Card -->
+            <div class="card">
+                <div class="card-header-sm">
+                    <span class="card-title-sm">NIST Maturity Tier</span>
+                    <span>🏅</span>
+                </div>
+                <div id="res-maturity-badge" class="card-value" style="font-size: 1.5rem; color: var(--accent-green);">
+                    Initial
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.4rem;">
+                    Based on NIST CSF 2.0 Tiers
+                </p>
+            </div>
+
+            <!-- Audited Controls Summary -->
+            <div class="card">
+                <div class="card-header-sm">
+                    <span class="card-title-sm">Controls Implemented</span>
+                    <span>✅</span>
+                </div>
+                <div id="res-controls-implemented-count" class="card-value" style="color: var(--accent-green);">
+                    0 / 32
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.4rem;">
+                    Scored &gt;= Implemented (80 pts)
+                </p>
+            </div>
+
+            <!-- Critical Gaps Count -->
+            <div class="card">
+                <div class="card-header-sm">
+                    <span class="card-title-sm">Critical Security Gaps</span>
+                    <span>⚠️</span>
+                </div>
+                <div id="res-critical-gaps-count" class="card-value" style="color: var(--accent-red);">
+                    0
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.4rem;">
+                    Requires Remediation Action
+                </p>
+            </div>
+        </div>
+
+        <!-- Charts Grid (Pure CSS Bar Chart + Chart.js Radar Chart) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            
+            <!-- Pure CSS Per-Domain Bar Breakdown -->
+            <div class="card">
+                <div class="card-header-sm" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                    <span class="card-title-sm" style="font-size: 1rem; color: var(--text-primary);">Domain Score Distribution</span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Weighted Breakdown</span>
+                </div>
+                <div id="res-css-bar-chart-container" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Rendered via JS -->
+                </div>
+            </div>
+
+            <!-- Chart.js Spider / Radar Chart -->
+            <div class="card">
+                <div class="card-header-sm" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                    <span class="card-title-sm" style="font-size: 1rem; color: var(--text-primary);">NIST Domain Radar Profile</span>
+                    <span>🎯</span>
+                </div>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="assessmentRadarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gaps & Remediation Table -->
+        <div class="card" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.1rem; color: var(--text-primary);">
+                    🚨 Identified Security Gaps & Recommended Remediation Actions
+                </h3>
+                <span id="res-gaps-badge" style="font-size: 0.8rem; padding: 0.25rem 0.6rem; border-radius: 4px; background: rgba(239,68,68,0.2); color: var(--accent-red); font-weight: bold;">
+                    0 Gaps Pending
+                </span>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>Control Code & Title</th>
+                            <th>Current State</th>
+                            <th>Score</th>
+                            <th>Recommended Remediation Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="res-gaps-table-body">
+                        <!-- Rendered via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ====================================================================== -->
+    <!-- VIEW 4: ASSESSMENT HISTORY -->
+    <!-- ====================================================================== -->
+    <div id="view-4-history" class="assessment-view" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <h2>Historical Ransomware Readiness Audits</h2>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                    Archive of all past completed organizational assessments and score snapshots.
+                </p>
+            </div>
+            <button class="btn btn-primary" onclick="resetToStart()">
+                ➕ Begin New Assessment
+            </button>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Organization Name</th>
+                        <th>Overall Score</th>
+                        <th>Maturity Level</th>
+                        <th>Completed Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            ⌛ Loading audit history...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // --- STATE MACHINE VARIABLES ---
+    let currentAssessmentId = null;
+    let assessmentDomains = [];
+    let currentDomainIndex = 0;
+    let userAnswers = {}; // control_code -> answer string
+    let radarChartInstance = null;
+
+    // --- VIEW SWITCHER ---
+    function showView(viewId) {
+        document.querySelectorAll('.assessment-view').forEach(el => el.style.display = 'none');
+        const target = document.getElementById(viewId);
+        if (target) target.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showErrorAlert(msg) {
+        const alertBox = document.getElementById('assessment-error-alert');
+        if (!alertBox) return;
+        alertBox.textContent = '⚠️ ' + msg;
+        alertBox.style.display = 'block';
+        setTimeout(() => alertBox.style.display = 'none', 6000);
+    }
+
+    // =========================================================================
+    // VIEW 1: START ASSESSMENT
+    // =========================================================================
+    async function handleStartAssessment(e) {
+        e.preventDefault();
+        const orgName = document.getElementById('input_org_name').value.trim();
+        const orgSize = document.getElementById('input_org_size').value;
+        const industry = document.getElementById('input_industry').value;
+        const assessorName = document.getElementById('input_assessor_name').value.trim();
+
+        if (!orgName || !assessorName) {
+            showErrorAlert('Please fill in all required organization and assessor fields.');
+            return;
+        }
+
+        const btnSubmit = document.getElementById('btn-start-submit');
+        const btnText = document.getElementById('start-btn-text');
+        const btnSpinner = document.getElementById('start-btn-spinner');
+
+        btnSubmit.disabled = true;
+        btnText.style.display = 'none';
+        btnSpinner.style.display = 'inline';
+
+        try {
+            const res = await fetch('/api/assessment/new', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    org_name: orgName,
+                    org_size: orgSize,
+                    industry: industry,
+                    assessor_name: assessorName
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to create assessment.');
+
+            currentAssessmentId = data.assessment_id;
+            assessmentDomains = data.domains || [];
+            currentDomainIndex = 0;
+            userAnswers = {};
+
+            // Initialize user answers state (auto-detected controls set to 'implemented' by default)
+            assessmentDomains.forEach(domain => {
+                (domain.controls || []).forEach(ctrl => {
+                    if (ctrl.auto_detected) {
+                        userAnswers[ctrl.control_code] = ctrl.maturity_answer || 'implemented';
+                    } else {
+                        userAnswers[ctrl.control_code] = ctrl.maturity_answer || 'not_implemented';
+                    }
+                });
+            });
+
+            renderDomainQuestionnaire();
+            showView('view-2-questionnaire');
+        } catch (err) {
+            showErrorAlert(err.message || 'Error initializing assessment session.');
+        } finally {
+            btnSubmit.disabled = false;
+            btnText.style.display = 'inline';
+            btnSpinner.style.display = 'none';
+        }
+    }
+
+    // =========================================================================
+    // VIEW 2: QUESTIONNAIRE
+    // =========================================================================
+    function renderDomainQuestionnaire() {
+        if (!assessmentDomains || assessmentDomains.length === 0) return;
+
+        const domain = assessmentDomains[currentDomainIndex];
+        const totalDomains = assessmentDomains.length;
+        const percent = Math.round(((currentDomainIndex + 1) / totalDomains) * 100);
+
+        // Header and Progress Updates
+        document.getElementById('q-domain-step-label').textContent = `Domain ${currentDomainIndex + 1} of ${totalDomains}`;
+        document.getElementById('q-domain-title').textContent = `${domain.domain_name} (${domain.domain_code})`;
+        document.getElementById('q-progress-percent').textContent = `${percent}%`;
+        document.getElementById('q-progress-bar-fill').style.width = `${percent}%`;
+        document.getElementById('q-footer-domain-counter').textContent = `Domain ${currentDomainIndex + 1} of ${totalDomains}`;
+
+        // Buttons state
+        const btnPrev = document.getElementById('btn-prev-domain');
+        const btnNext = document.getElementById('btn-next-domain');
+
+        btnPrev.disabled = (currentDomainIndex === 0);
+        btnPrev.style.opacity = (currentDomainIndex === 0) ? '0.5' : '1';
+
+        if (currentDomainIndex === totalDomains - 1) {
+            btnNext.textContent = '🚀 Submit & Generate Score';
+            btnNext.className = 'btn btn-primary';
+            btnNext.style.background = 'linear-gradient(135deg, var(--accent-green), var(--accent-cyan))';
+            btnNext.style.color = '#080c14';
+        } else {
+            btnNext.textContent = 'Next Domain →';
+            btnNext.className = 'btn btn-primary';
+            btnNext.style.background = '';
+            btnNext.style.color = '';
+        }
+
+        // Render Controls
+        const container = document.getElementById('controls-list-container');
+        container.innerHTML = '';
+
+        (domain.controls || []).forEach(ctrl => {
+            const currentSelected = userAnswers[ctrl.control_code] || 'not_implemented';
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.background = 'rgba(15, 23, 42, 0.75)';
+            card.style.border = '1px solid var(--border-color)';
+            card.style.padding = '1.25rem';
+
+            let autoBadgeHtml = '';
+            if (ctrl.auto_detected) {
+                autoBadgeHtml = `
+                    <div style="margin-top: 0.5rem; padding: 0.4rem 0.75rem; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.8rem; color: var(--accent-green); display: flex; align-items: center; gap: 0.4rem;">
+                        <span>✓ Auto-Detected by CanaryGuard:</span>
+                        <strong style="color: #f8fafc;">${ctrl.auto_evidence || 'Telemetry Active'}</strong>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div>
+                        <span style="font-family: var(--font-mono); font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); margin-right: 0.5rem;">
+                            ${ctrl.control_code}
+                        </span>
+                        <strong style="font-size: 1.05rem; color: var(--text-primary);">${ctrl.control_title}</strong>
+                    </div>
+                </div>
+
+                <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.4; margin-bottom: 0.5rem;">
+                    ${ctrl.control_description}
+                </p>
+
+                ${autoBadgeHtml}
+
+                <!-- Why It Matters Toggle -->
+                <div style="margin-top: 0.6rem; margin-bottom: 1rem;">
+                    <button type="button" class="btn btn-secondary" onclick="toggleWhyItMatters('${ctrl.control_code}')" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
+                        💡 Why It Matters
+                    </button>
+                    <div id="why-${ctrl.control_code}" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: rgba(8, 12, 20, 0.6); border-left: 3px solid var(--accent-yellow); border-radius: 4px; font-size: 0.83rem; color: var(--text-secondary);">
+                        ${ctrl.why_it_matters}
+                    </div>
+                </div>
+
+                <!-- 4 Radio Buttons Choice Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+                    ${renderRadioOption(ctrl.control_code, 'not_implemented', 'Not Implemented (0 pts)', currentSelected)}
+                    ${renderRadioOption(ctrl.control_code, 'partial', 'Partially Implemented (40 pts)', currentSelected)}
+                    ${renderRadioOption(ctrl.control_code, 'implemented', 'Fully Implemented (80 pts)', currentSelected)}
+                    ${renderRadioOption(ctrl.control_code, 'optimized', 'Continuous / Optimized (100 pts)', currentSelected)}
+                </div>
+            `;
+
+            container.appendChild(card);
+        });
+    }
+
+    function renderRadioOption(controlCode, value, labelText, currentSelected) {
+        const isChecked = (currentSelected === value) ? 'checked' : '';
+        return `
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.8rem; background: rgba(8, 12, 20, 0.5); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 0.83rem; color: var(--text-primary); transition: border-color 0.2s;">
+                <input type="radio" name="radio-${controlCode}" value="${value}" ${isChecked} onchange="handleAnswerChange('${controlCode}', '${value}')">
+                <span>${labelText}</span>
+            </label>
+        `;
+    }
+
+    function handleAnswerChange(controlCode, val) {
+        userAnswers[controlCode] = val;
+    }
+
+    function toggleWhyItMatters(controlCode) {
+        const el = document.getElementById(`why-${controlCode}`);
+        if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    }
+
+    async function navigateDomain(direction) {
+        const totalDomains = assessmentDomains.length;
+
+        if (direction === 1) {
+            // Check if last domain -> Submit
+            if (currentDomainIndex === totalDomains - 1) {
+                await submitAssessment();
+                return;
+            }
+            currentDomainIndex++;
+        } else if (direction === -1) {
+            if (currentDomainIndex > 0) currentDomainIndex--;
+        }
+
+        renderDomainQuestionnaire();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function submitAssessment() {
+        if (!currentAssessmentId) {
+            showErrorAlert('No active assessment session.');
+            return;
+        }
+
+        const btnNext = document.getElementById('btn-next-domain');
+        btnNext.disabled = true;
+        btnNext.textContent = '⌛ Computing Security Score...';
+
+        try {
+            const res = await fetch(`/api/assessment/${currentAssessmentId}/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers: userAnswers })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to submit assessment answers.');
+
+            renderResultsView(data);
+            showView('view-3-results');
+        } catch (err) {
+            showErrorAlert(err.message || 'Submission error.');
+        } finally {
+            btnNext.disabled = false;
+        }
+    }
+
+    // =========================================================================
+    // VIEW 3: SCORING / RESULTS
+    // =========================================================================
+    function renderResultsView(data) {
+        const score = parseFloat(data.overall_score || 0).toFixed(1);
+        const maturity = data.maturity_level || 'Initial';
+
+        document.getElementById('res-org-subtitle').textContent = `
+            Executive posture audit for ${data.org_name || 'Organization'} (${data.org_size || ''} ${data.industry || ''}) — Auditor: ${data.assessor_name || 'System Admin'}
+        `;
+
+        // Score Card Updates
+        const scoreValEl = document.getElementById('res-overall-score-val');
+        const scoreBarEl = document.getElementById('res-overall-score-bar');
+        scoreValEl.textContent = `${score}%`;
+        scoreBarEl.style.width = `${score}%`;
+
+        if (score >= 75) {
+            scoreValEl.style.color = 'var(--accent-green)';
+            scoreBarEl.style.background = 'var(--accent-green)';
+        } else if (score >= 45) {
+            scoreValEl.style.color = 'var(--accent-yellow)';
+            scoreBarEl.style.background = 'var(--accent-yellow)';
+        } else {
+            scoreValEl.style.color = 'var(--accent-red)';
+            scoreBarEl.style.background = 'var(--accent-red)';
+        }
+
+        // Maturity Level Badge
+        const maturityBadge = document.getElementById('res-maturity-badge');
+        maturityBadge.textContent = maturity;
+
+        // Controls Count & Gaps
+        let totalControls = 0;
+        let implementedCount = 0;
+        let gapsList = [];
+
+        (data.domains || []).forEach(dom => {
+            (dom.controls || []).forEach(ctrl => {
+                totalControls++;
+                if (ctrl.score_value >= 80) {
+                    implementedCount++;
+                } else {
+                    gapsList.push({
+                        domain_name: dom.domain_name,
+                        domain_code: dom.domain_code,
+                        control_code: ctrl.control_code,
+                        control_title: ctrl.control_title,
+                        maturity_answer: ctrl.maturity_answer,
+                        score_value: ctrl.score_value,
+                        remediation_tip: ctrl.remediation_tip
+                    });
+                }
+            });
+        });
+
+        document.getElementById('res-controls-implemented-count').textContent = `${implementedCount} / ${totalControls}`;
+        document.getElementById('res-critical-gaps-count').textContent = gapsList.length;
+        document.getElementById('res-gaps-badge').textContent = `${gapsList.length} Action Items Pending`;
+
+        // Render Pure CSS Bar Chart
+        const barContainer = document.getElementById('res-css-bar-chart-container');
+        barContainer.innerHTML = '';
+
+        (data.domains || []).forEach(dom => {
+            const domScore = parseFloat(dom.score || 0).toFixed(1);
+            let barColor = 'var(--accent-cyan)';
+            if (domScore < 45) barColor = 'var(--accent-red)';
+            else if (domScore < 75) barColor = 'var(--accent-yellow)';
+            else barColor = 'var(--accent-green)';
+
+            const row = document.createElement('div');
+            row.innerHTML = `
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.3rem;">
+                    <span><strong>${dom.domain_name}</strong> (${dom.domain_code})</span>
+                    <strong style="color: ${barColor};">${domScore}%</strong>
+                </div>
+                <div style="width: 100%; height: 10px; background: rgba(8,12,20,0.6); border-radius: 5px; overflow: hidden; border: 1px solid var(--border-color);">
+                    <div style="width: ${domScore}%; height: 100%; background: ${barColor}; transition: width 0.6s ease;"></div>
+                </div>
+            `;
+            barContainer.appendChild(row);
+        });
+
+        // Render Chart.js Radar Chart
+        initRadarChart(data.domains || []);
+
+        // Render Gaps Table
+        const tbody = document.getElementById('res-gaps-table-body');
+        tbody.innerHTML = '';
+
+        if (gapsList.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--accent-green); padding: 2rem;">
+                        🎉 Outstanding Security Posture! Zero critical gaps identified across all 6 domains.
+                    </td>
+                </tr>
+            `;
+        } else {
+            gapsList.forEach(gap => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <span style="font-size: 0.75rem; font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan);">
+                            ${gap.domain_code}
+                        </span>
+                    </td>
+                    <td>
+                        <strong style="color: var(--text-primary);">${gap.control_title}</strong>
+                        <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">${gap.control_code}</div>
+                    </td>
+                    <td>
+                        <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); color: var(--accent-red);">
+                            ${gap.maturity_answer.replace('_', ' ').toUpperCase()}
+                        </span>
+                    </td>
+                    <td><strong>${gap.score_value} pts</strong></td>
+                    <td style="color: var(--text-secondary); font-size: 0.83rem; line-height: 1.4;">
+                        ${gap.remediation_tip}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    }
+
+    function initRadarChart(domains) {
+        const ctx = document.getElementById('assessmentRadarChart');
+        if (!ctx) return;
+
+        const labels = domains.map(d => d.domain_code);
+        const scores = domains.map(d => d.score);
+
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const textColor = currentTheme === 'light' ? '#475569' : '#94a3b8';
+        const gridColor = currentTheme === 'light' ? '#cbd5e1' : 'rgba(56, 189, 248, 0.2)';
+
+        if (radarChartInstance) radarChartInstance.destroy();
+
+        radarChartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Maturity Score (%)',
+                    data: scores,
+                    backgroundColor: 'rgba(0, 243, 255, 0.2)',
+                    borderColor: '#00f3ff',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#00f3ff',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#00f3ff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: gridColor },
+                        grid: { color: gridColor },
+                        pointLabels: { color: textColor, font: { size: 11, weight: 'bold' } },
+                        ticks: { backdropColor: 'transparent', color: textColor, stepSize: 20 },
+                        min: 0,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    function downloadPdfReport() {
+        if (!currentAssessmentId) {
+            showErrorAlert('No completed assessment available for download.');
+            return;
+        }
+        window.open(`/api/assessment/${currentAssessmentId}/report`, '_blank');
+    }
+
+    function resetToStart() {
+        currentAssessmentId = null;
+        assessmentDomains = [];
+        currentDomainIndex = 0;
+        userAnswers = {};
+        document.getElementById('start-assessment-form').reset();
+        showView('view-1-start');
+    }
+
+    // =========================================================================
+    // VIEW 4: ASSESSMENT HISTORY
+    // =========================================================================
+    async function loadAssessmentHistory() {
+        showView('view-4-history');
+        const tbody = document.getElementById('history-table-body');
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">⌛ Loading history...</td></tr>`;
+
+        try {
+            const res = await fetch('/api/assessment/history');
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Failed to fetch history.');
+
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No historical audits completed yet.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                const score = parseFloat(item.overall_score || 0).toFixed(1);
+                tr.innerHTML = `
+                    <td>#${item.id}</td>
+                    <td><strong>${item.org_name}</strong></td>
+                    <td><strong style="color: var(--accent-cyan);">${score}%</strong></td>
+                    <td>
+                        <span style="padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: bold; background: rgba(16,185,129,0.15); color: var(--accent-green); font-size: 0.8rem;">
+                            ${item.maturity_level}
+                        </span>
+                    </td>
+                    <td>${item.created_at}</td>
+                    <td>
+                        <button class="btn btn-primary" onclick="viewHistoricalReport(${item.id})" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
+                            View Breakdown →
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            showErrorAlert(err.message || 'Error loading history.');
+        }
+    }
+
+    async function viewHistoricalReport(id) {
+        try {
+            const res = await fetch(`/api/assessment/${id}/score-breakdown`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load breakdown.');
+
+            currentAssessmentId = id;
+            renderResultsView(data);
+            showView('view-3-results');
+        } catch (err) {
+            showErrorAlert(err.message || 'Error loading report.');
+        }
+    }
+</script>
+{% endblock %}

@@ -2,15 +2,15 @@
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
-    <a href="/incidents" style="color: var(--accent-cyan); text-decoration: none; font-size: 0.9rem;">← Back to All Incidents</a>
+    <a href="/incidents" style="color: var(--accent-cyan); text-decoration: none; font-size: 0.9rem;">← Back to Incidents List</a>
 </div>
 
-<!-- Header Incident Banner -->
-<div class="card" style="margin-bottom: 1.5rem; border-left: 5px solid {% if incident.threat_level == 'CRITICAL' %}var(--accent-red){% else %}var(--accent-yellow){% endif %};">
+<!-- Header Info Bar -->
+<div class="card" style="margin-bottom: 1.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
-            <h2 style="font-size: 1.6rem; color: var(--text-primary); margin-bottom: 0.5rem;">
-                Incident #{{ incident.id }} — {{ incident.threat_level }} Threat Level
+            <h2 style="color: var(--accent-red); margin-bottom: 0.5rem;">
+                🚨 Incident #{{ incident.id }} — {{ incident.threat_level }} RANSOMWARE BREACH
             </h2>
             <p style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.9rem;">
                 Target File: {{ incident.file_path }}
@@ -21,7 +21,7 @@
                 STATUS: {{ incident.status }}
             </span>
             <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
-                Logged at: {{ incident.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                Logged at: {{ incident.created_at.strftime('%d %b %Y %I:%M %p IST') if incident.created_at else 'N/A' }}
             </div>
         </div>
     </div>
@@ -34,88 +34,82 @@
     <div class="card">
         <div class="card-header-sm">
             <span class="card-title-sm">AI Threat Score</span>
-            <span>🎯</span>
+            <span style="font-size: 0.8rem; color: var(--accent-cyan);">EVALUATED BY AI</span>
         </div>
-        <div class="card-value" style="color: var(--accent-red); font-size: 2.5rem;">{{ score }}%</div>
-        <div class="threat-score-bar-bg" style="height: 14px;">
-            <div class="threat-score-bar-fill" style="width: {{ score }}%;"></div>
+        <div class="card-value" style="color: var(--accent-red); font-size: 3rem; text-align: center; margin: 1rem 0;">
+            {{ summary.threat_confidence }}%
         </div>
-        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem;">
-            Confidence Percentage: <strong>{{ score }}%</strong> based on canary decoy breach, Shannon entropy math, and process payload characteristics.
-        </p>
+        <div class="threat-score-bar-bg">
+            <div class="threat-score-bar-fill" style="width: {{ summary.threat_confidence }}%;"></div>
+        </div>
+        <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary); text-align: center;">
+            Confidence Threshold: <strong>HIGH RISK</strong>
+        </div>
     </div>
 
     <!-- Feature 4 AI Incident Summary Card -->
     <div class="card">
-        <div class="card-header-sm" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-            <span class="card-title-sm" style="font-size: 1rem; color: var(--accent-cyan);">🤖 Incident Summary</span>
+        <div class="card-header-sm" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <span class="card-title-sm" style="font-size: 1rem; color: var(--accent-cyan);">🤖 AI Incident Summary</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Timestamp: {{ summary.time_str }}</span>
         </div>
-        <div style="margin-top: 1rem; line-height: 1.6; font-size: 0.95rem;">
-            <p>{{ summary.summary }}</p>
-            <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(2, 132, 199, 0.1); border-left: 3px solid var(--accent-cyan); border-radius: 4px;">
-                <strong>Recommended action:</strong> {{ summary.recommended_action }}
+        <div style="margin-top: 1rem;">
+            <p style="font-size: 1rem; line-height: 1.6; color: var(--text-primary); margin-bottom: 1rem;">
+                {{ summary.summary }}
+            </p>
+            <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--accent-red); padding: 0.75rem 1rem; border-radius: 4px;">
+                <strong style="color: var(--accent-red);">Recommended Action:</strong>
+                <span style="color: var(--text-secondary); font-size: 0.9rem;"> {{ summary.recommended_action }}</span>
             </div>
         </div>
     </div>
-
 </div>
 
-<!-- AI Threat Analysis & Recommendations (Features 2 & 5) -->
+<!-- Feature 4 AI Breakdown & Dynamic Recommendations (Features 4 & 5) -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
     
-    <!-- Feature 2 AI Threat Analysis Explanation -->
+    <!-- AI Explanation Section -->
     <div class="card">
-        <h3 style="font-size: 1.2rem; color: var(--accent-cyan); margin-bottom: 1rem;">
-            🤖 AI Threat Analysis
+        <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            🔍 Why Was This Flagged?
         </h3>
-        <p style="font-weight: 600; margin-bottom: 0.75rem;">This activity resembles ransomware because:</p>
-        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem;">
-            {% for r in explanation.reasons %}
-            <li style="display: flex; gap: 0.5rem; font-size: 0.9rem; color: var(--text-primary);">
-                <span style="color: var(--accent-red);">•</span> {{ r }}
-            </li>
-            {% endfor %}
-        </ul>
-        <p style="font-size: 0.85rem; color: var(--text-secondary); background: rgba(148,163,184,0.1); padding: 0.75rem; border-radius: 6px;">
-            This combination of decoy canary modification and elevated file entropy is strongly associated with active ransomware encryption behavior.
-        </p>
+        <div style="white-space: pre-line; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+            {{ explanation.summary_text }}
+        </div>
     </div>
 
-    <!-- Feature 5 AI Security Recommendations -->
+    <!-- Feature 5 Recommendations Section -->
     <div class="card">
-        <h3 style="font-size: 1.2rem; color: var(--accent-green); margin-bottom: 1rem;">
-            🛡️ Recommended Remediation Actions
+        <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            🛡️ Recommended Remediation Steps
         </h3>
-        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
             {% for rec in recommendations %}
-            <li style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.75rem 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); padding: 0.75rem 1rem; border-radius: 8px; display: flex; align-items: flex-start; gap: 0.75rem;">
+                <span style="font-size: 1.2rem;">{% if rec.recommended %}✅{% else %}ℹ️{% endif %}</span>
                 <div>
-                    <div style="font-weight: 700; color: var(--accent-green);">✓ {{ rec.title }}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ rec.desc }}</div>
+                    <strong style="color: var(--text-primary); font-size: 0.95rem;">{{ rec.title }}</strong>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">{{ rec.desc }}</p>
                 </div>
-                <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="showToast('Action \'{{ rec.title }}\' executed successfully!', 'success')">Execute</button>
-            </li>
+            </div>
             {% endfor %}
-        </ul>
+        </div>
     </div>
-
 </div>
 
-<!-- Feature 8 AI Vertical Timeline -->
-<div class="card" style="margin-bottom: 2rem;">
-    <h3 style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 1rem;">
-        ⏳ AI Incident Timeline & Telemetry Sequence
-    </h3>
-    <div class="timeline-v">
-        {% for ev in timeline %}
-        <div class="timeline-item">
-            <div class="timeline-badge"></div>
-            <div class="timeline-content">
-                <div class="timeline-time">{{ ev.time }}</div>
-                <div style="font-weight: 600; font-size: 0.95rem; margin-top: 2px;">{{ ev.title }}</div>
+<!-- Feature 4 Vertical Incident Timeline -->
+<div class="card">
+    <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1.5rem;">⏱️ Chronological Forensic Event Timeline</h3>
+    <ul class="timeline">
+        {% for evt in timeline %}
+        <li class="timeline-item">
+            <div class="timeline-badge badge-{{ evt.color }}"></div>
+            <div class="timeline-panel">
+                <span class="timeline-time">{{ evt.time }}</span>
+                <strong class="timeline-title">{{ evt.title }}</strong>
             </div>
-        </div>
+        </li>
         {% endfor %}
-    </div>
+    </ul>
 </div>
 {% endblock %}

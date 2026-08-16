@@ -2,16 +2,19 @@
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
-    <h2>Live Threat Feed Stream</h2>
-    <p style="color: var(--text-secondary); font-size: 0.9rem;">Real-time feed of detected file system events, Shannon entropy calculations, and canary decoy alerts.</p>
+    <h2>Live Threat Feed Telemetry Stream</h2>
+    <p style="color: var(--text-secondary); font-size: 0.9rem;">Real-time event log of security incidents, canary breaches, and process quarantines.</p>
 </div>
 
 <div class="table-wrapper">
-    <table class="custom-table" id="threat-feed-table">
+    <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color);">
+        <h3>All Security Incidents</h3>
+    </div>
+    <table class="custom-table">
         <thead>
             <tr>
                 <th>Timestamp</th>
-                <th>Level</th>
+                <th>Threat Level</th>
                 <th>Confidence</th>
                 <th>Process Name (PID)</th>
                 <th>Target File Path</th>
@@ -22,7 +25,7 @@
         <tbody>
             {% for inc in incidents %}
             <tr>
-                <td>{{ inc.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>{{ inc.created_at.strftime('%d %b %Y %I:%M %p IST') if inc.created_at else 'N/A' }}</td>
                 <td>
                     <span style="color: {% if inc.threat_level == 'CRITICAL' %}var(--accent-red){% elif inc.threat_level == 'HIGH' %}var(--accent-yellow){% else %}var(--accent-cyan){% endif %}; font-weight: bold;">
                         {{ inc.threat_level }}

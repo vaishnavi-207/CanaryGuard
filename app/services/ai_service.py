@@ -1,5 +1,6 @@
 import os
 import math
+import requests
 from app.models.incident import Incident
 from app.models.canary_file import CanaryFile
 from app.models.monitored_folder import MonitoredFolder
@@ -9,8 +10,42 @@ class AIService:
     """
     AI Threat Analysis, Threat Scoring, Summary, and Recommendation engine.
     Supports intelligent rule-based templates and can seamlessly integrate
-    with Gemini/OpenAI API keys when configured.
+    with Anthropic Claude API when configured.
     """
+
+    @staticmethod
+    def _call_anthropic_api(system_prompt: str, user_message: str):
+        """
+        Helper method to call Anthropic API if ANTHROPIC_API_KEY is set.
+        Returns response text string or None. Never raises exceptions.
+        """
+        try:
+            key = os.environ.get('ANTHROPIC_API_KEY')
+            if not key:
+                return None
+
+            url = "https://api.anthropic.com/v1/messages"
+            headers = {
+                "x-api-key": key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            }
+            payload = {
+                "model": "claude-haiku-4-5",
+                "max_tokens": 500,
+                "system": system_prompt,
+                "messages": [{"role": "user", "content": user_message}]
+            }
+
+            resp = requests.post(url, headers=headers, json=payload, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                content = data.get('content', [])
+                if content and isinstance(content, list) and len(content) > 0:
+                    return content[0].get('text')
+            return None
+        except Exception:
+            return None
 
     @staticmethod
     def calculate_threat_score(incident_data):
@@ -50,7 +85,51 @@ class AIService:
     def generate_explanation(cls, incident):
         """
         Generates structured AI Threat Analysis explanation for an incident.
+        Uses Anthropic API if available, falling back to template logic.
         """
+        # Build incident_json representation
+        incident_dict = {
+            "id": getattr(incident, 'id', None),
+            "threat_level": getattr(incident, 'threat_level', None),
+            "file_path": getattr(incident, 'file_path', None),
+            "canary_triggered": getattr(incident, 'canary_triggered', False),
+            "entropy_value": getattr(incident, 'entropy_value', None),
+            "process_id": getattr(incident, 'process_id', None),
+            "process_name": getattr(incident, 'process_name', None),
+            "action_taken": getattr(incident, 'action_taken', None),
+            "description": getattr(incident, 'description', None),
+            "confidence_score": getattr(incident, 'confidence_score', None)
+        }
+
+        system_prompt = (
+            "You are a malware analyst. Analyze this ransomware incident and return "
+            "exactly 3 bullet points explaining why it is suspicious. Be specific and technical."
+        )
+
+        llm_response = cls._call_anthropic_api(system_prompt, str(incident_dict))
+        if llm_response:
+            # Parse bullet points from LLM output
+            lines = [line.strip() for line in llm_response.split('\n') if line.strip()]
+            reasons = []
+            for line in lines:
+                clean_line = line.lstrip('•*-123456789. ').strip()
+                if clean_line:
+                    reasons.append(clean_line)
+            reasons = reasons[:3]
+
+            if reasons:
+                explanation_text = (
+                    f"This activity resembles ransomware behavior because:\n\n" +
+                    "\n".join([f"• {r}" for r in reasons]) +
+                    "\n\nThis pattern indicates automated unauthorized payload execution targeting local storage assets."
+                )
+                return {
+                    "title": "AI Threat Analysis",
+                    "summary_text": explanation_text,
+                    "reasons": reasons
+                }
+
+        # Fallback template logic
         reasons = []
 
         if incident.canary_triggered:
@@ -197,11 +276,21 @@ class AIService:
     @classmethod
     def chat_response(cls, user_message):
         """
-        AI Chatbot handler with intelligent local security knowledge base.
+        AI Chatbot handler with optional Anthropic Claude integration and local fallback.
         """
+        system_prompt = (
+            "You are a cybersecurity assistant for CanaryGuard EDR ransomware detection platform. "
+            "Answer concisely in 2-3 sentences. Focus on practical security advice."
+        )
+
+        llm_response = cls._call_anthropic_api(system_prompt, user_message)
+        if llm_response:
+            return llm_response
+
+        # Fallback keyword logic
         msg = user_message.lower().strip()
 
-        if "flagged" in msg or "why" in msg and "file" in msg:
+        if "flagged" in msg or ("why" in msg and "file" in msg):
             return (
                 "Files are flagged when CanaryGuard detects unauthorized modifications to decoy canary files, "
                 "a sudden surge in file entropy (indicating encryption), or rapid burst file operations executed "

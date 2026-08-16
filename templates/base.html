@@ -1,13 +1,27 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CanaryGuard EDR - {{ page_title or 'Dashboard' }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+    if (typeof io === 'undefined') {
+        console.warn('Running without real-time updates.');
+        window.io = function() { 
+            return { 
+                on: function(){}, 
+                emit: function(){},
+                connected: false
+            }; 
+        };
+    }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
@@ -17,14 +31,26 @@
         </div>
         <ul class="nav-links">
             <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">📊 Dashboard</a></li>
-            <li><a href="/threat-feed" class="nav-link {% if request.path == '/threat-feed' %}active{% endif %}">⚡ Live Threat Feed</a></li>
-            <li><a href="/incidents" class="nav-link {% if request.path == '/incidents' %}active{% endif %}">🚨 Incidents</a></li>
-            <li><a href="/canaries" class="nav-link {% if request.path == '/canaries' %}active{% endif %}">🐤 Canary Manager</a></li>
-            <li><a href="/processes" class="nav-link {% if request.path == '/processes' %}active{% endif %}">⚙️ Process Explorer</a></li>
-            <li><a href="/monitored-folders" class="nav-link {% if request.path == '/monitored-folders' %}active{% endif %}">📁 Monitored Folders</a></li>
-            <li><a href="/statistics" class="nav-link {% if request.path == '/statistics' %}active{% endif %}">📈 Analytics</a></li>
-            <li><a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}">⚙️ Settings</a></li>
-            <li><a href="/logs" class="nav-link {% if request.path == '/logs' %}active{% endif %}">📜 Log Viewer</a></li>
+            <li><a href="/readiness-assessment"
+                    class="nav-link {% if request.path == '/readiness-assessment' %}active{% endif %}">🛡️ Readiness
+                    Assessment</a></li>
+            <li><a href="/threat-feed" class="nav-link {% if request.path == '/threat-feed' %}active{% endif %}">⚡ Live
+                    Threat Feed</a></li>
+            <li><a href="/incidents" class="nav-link {% if request.path == '/incidents' %}active{% endif %}">🚨
+                    Incidents</a></li>
+            <li><a href="/canaries" class="nav-link {% if request.path == '/canaries' %}active{% endif %}">🐤 Canary
+                    Manager</a></li>
+            <li><a href="/processes" class="nav-link {% if request.path == '/processes' %}active{% endif %}">⚙️ Process
+                    Explorer</a></li>
+            <li><a href="/monitored-folders"
+                    class="nav-link {% if request.path == '/monitored-folders' %}active{% endif %}">📁 Monitored
+                    Folders</a></li>
+            <li><a href="/statistics" class="nav-link {% if request.path == '/statistics' %}active{% endif %}">📈
+                    Analytics</a></li>
+            <li><a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}">⚙️
+                    Settings</a></li>
+            <li><a href="/logs" class="nav-link {% if request.path == '/logs' %}active{% endif %}">📜 Log Viewer</a>
+            </li>
             <li><a href="/about" class="nav-link {% if request.path == '/about' %}active{% endif %}">ℹ️ About</a></li>
         </ul>
     </aside>
@@ -36,16 +62,18 @@
                 <h1>{{ page_title or 'Endpoint Security Overview' }}</h1>
             </div>
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <!-- Feature 9 PDF Report & Feature 16 Presentation Demo Buttons -->
-                <a href="/api/reports/pdf" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem;">📄 Security Report</a>
-                <button onclick="triggerDemoMode()" class="btn btn-primary" style="font-size: 0.8rem;">🚀 Demo Mode</button>
+                <!-- Feature 9 PDF Report Button -->
+                <a href="/api/reports/pdf" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem;">📄
+                    Security Report</a>
 
                 <!-- Feature 1 Light/Dark Theme Switcher -->
-                <button id="theme-toggle-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                <button id="theme-toggle-btn" class="btn btn-secondary"
+                    style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
                     <span id="theme-icon">🌙</span> <span id="theme-label">Dark</span>
                 </button>
 
-                <div class="status-badge {% if status and status.is_running %}status-active{% else %}status-stopped{% endif %}">
+                <div
+                    class="status-badge {% if status and status.is_running %}status-active{% else %}status-stopped{% endif %}">
                     <span class="pulse-dot"></span>
                     {% if status and status.is_running %}PROTECTION ACTIVE{% else %}PROTECTION PAUSED{% endif %}
                 </div>
@@ -61,25 +89,27 @@
     </main>
 
     <!-- Feature 7 Floating AI Chatbot Icon and Drawer -->
-    <div class="chatbot-fab" onclick="toggleChatbot()" title="CanaryGuard AI Assistant">🤖</div>
+    <div class="chatbot-fab" onclick="toggleChatbot()" title="Nest">🤖</div>
 
     <div class="chatbot-modal" id="chatbot-modal" style="display: none;">
         <div class="chatbot-header">
-            <span>🤖 AI Security Assistant</span>
+            <span id="chatbot-title">🤖 AI Security Assistant</span>
             <span style="cursor: pointer;" onclick="toggleChatbot()">✖</span>
         </div>
         <div class="chatbot-messages" id="chat-messages">
-            <div class="chat-msg bot">Hello! I am your AI Endpoint Security Assistant. Ask me about canary traps, entropy detection, or quarantine actions!</div>
+            <div class="chat-msg bot">Hello! I am your AI Endpoint Security Assistant. Ask me about canary traps,
+                entropy detection, or quarantine actions!</div>
         </div>
         <div class="chatbot-input-row">
-            <input type="text" id="chat-input" placeholder="Type your security question..." onkeypress="handleChatKeyPress(event)">
+            <input type="text" id="chat-input" placeholder="Type your security question..."
+                onkeypress="handleChatKeyPress(event)">
             <button class="btn btn-primary" onclick="sendChatMessage()" style="padding: 0.4rem 0.8rem;">Send</button>
         </div>
     </div>
 
     <script src="{{ url_for('static', filename='js/socket_client.js') }}"></script>
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-    
+
     <script>
         // Light / Dark Theme Switching (Feature 1)
         const themeBtn = document.getElementById('theme-toggle-btn');
@@ -135,31 +165,18 @@
             try {
                 const res = await fetch('/api/ai/chat', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: msg})
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
                 });
                 const data = await res.json();
                 chatBox.innerHTML += `<div class="chat-msg bot">${data.response || 'No response.'}</div>`;
                 chatBox.scrollTop = chatBox.scrollHeight;
-            } catch(err) {
+            } catch (err) {
                 chatBox.innerHTML += `<div class="chat-msg bot">Error communicating with AI service.</div>`;
             }
         }
 
-        // Feature 16 Demo Mode Trigger
-        async function triggerDemoMode() {
-            try {
-                const res = await fetch('/api/presentation/trigger-demo', {method: 'POST'});
-                const data = await res.json();
-                if (data.incident_id) {
-                    showToast('🚨 Presentation Demo Triggered! Incident #' + data.incident_id + ' Created.', 'danger');
-                }
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-        function showToast(msg, type='info') {
+        function showToast(msg, type = 'info') {
             const toastContainer = document.getElementById('toast-container');
             if (!toastContainer) return;
             const toast = document.createElement('div');
@@ -169,7 +186,15 @@
             toastContainer.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
         }
+
+        fetch('/api/ai/status').then(r=>r.json()).then(d=>{
+            if(d.llm_enabled) {
+                const t = document.getElementById('chatbot-title');
+                if(t) t.textContent = '🤖 AI Assistant • Powered by Claude';
+            }
+        }).catch(()=>{});
     </script>
     {% block scripts %}{% endblock %}
 </body>
+
 </html>
