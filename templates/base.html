@@ -8,16 +8,16 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-    if (typeof io === 'undefined') {
-        console.warn('Running without real-time updates.');
-        window.io = function() { 
-            return { 
-                on: function(){}, 
-                emit: function(){},
-                connected: false
-            }; 
-        };
-    }
+        if (typeof io === 'undefined') {
+            console.warn('Running without real-time updates.');
+            window.io = function () {
+                return {
+                    on: function () { },
+                    emit: function () { },
+                    connected: false
+                };
+            };
+        }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -52,6 +52,12 @@
             <li><a href="/logs" class="nav-link {% if request.path == '/logs' %}active{% endif %}">📜 Log Viewer</a>
             </li>
             <li><a href="/about" class="nav-link {% if request.path == '/about' %}active{% endif %}">ℹ️ About</a></li>
+            <li>
+                <a href="/auth/logout" class="nav-link" style="color: #ef4444;">
+                    🚪 Logout
+                </a>
+            </li>
+
         </ul>
     </aside>
 
@@ -80,7 +86,7 @@
             </div>
         </header>
 
-        <div class="content-container">
+        <div class="content-container" style="overflow: visible;">
             {% block content %}{% endblock %}
         </div>
 
@@ -187,12 +193,12 @@
             setTimeout(() => toast.remove(), 4000);
         }
 
-        fetch('/api/ai/status').then(r=>r.json()).then(d=>{
-            if(d.llm_enabled) {
+        fetch('/api/ai/status').then(r => r.json()).then(d => {
+            if (d.llm_enabled) {
                 const t = document.getElementById('chatbot-title');
-                if(t) t.textContent = '🤖 AI Assistant • Powered by Claude';
+                if (t) t.textContent = '🤖 AI Assistant • Powered by Claude';
             }
-        }).catch(()=>{});
+        }).catch(() => { });
     </script>
     {% block scripts %}{% endblock %}
 </body>

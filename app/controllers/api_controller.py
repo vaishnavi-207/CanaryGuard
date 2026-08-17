@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any, Tuple
 from flask import jsonify, request, current_app, send_file
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from app.database.db import db
@@ -22,6 +22,11 @@ from app.logging.logger import get_api_logger, get_error_logger
 
 logger = get_api_logger()
 error_logger = get_error_logger()
+
+import time
+_insights_cache = {'data': None, 'ts': 0}
+CACHE_TTL = 30
+
 
 class APIController:
     """REST API Controller handling request validation, database interactions, and response formatting."""
@@ -59,6 +64,80 @@ class APIController:
         return jsonify({'message': f'Incident {incident_id} deleted successfully'}), 200
 
     @staticmethod
+    def update_incident_recovery(incident_id: int) -> Tuple[Dict[str, Any], int]:
+        import json
+        incident = Incident.query.get(incident_id)
+        if not incident:
+            return jsonify({'error': 'Incident not found'}), 404
+
+        data = request.get_json() or {}
+        new_status = data.get('status')
+        checklist = data.get('checklist')
+        notes = data.get('notes', '')
+
+        valid_statuses = ['Detected', 'Contained', 'Recovery Assessment', 'Recovery In Progress', 'Recovered', 'ACTIVE', 'RESOLVED', 'FALSE_POSITIVE']
+        if new_status:
+            if new_status not in valid_statuses:
+                return jsonify({'error': f'Invalid status. Must be one of {valid_statuses}'}), 400
+            incident.status = new_status
+            if new_status == 'Contained':
+                incident.contained_at = datetime.now(timezone.utc)
+            elif new_status in ['Recovered', 'RESOLVED']:
+                incident.recovered_at = datetime.now(timezone.utc)
+
+        existing_checklist = incident.get_recovery_checklist()
+        if isinstance(checklist, dict):
+            existing_checklist.update(checklist)
+
+        recovery_payload = {
+            'checklist': existing_checklist,
+            'notes': notes if notes else incident.get_recovery_notes_text()
+        }
+
+        incident.recovery_notes = json.dumps(recovery_payload)
+        db.session.commit()
+
+        from app.websocket.events import broadcast_dashboard_update
+        broadcast_dashboard_update()
+
+        return jsonify({
+            'message': f'Incident #{incident_id} recovery status updated.',
+            'incident_id': incident_id,
+            'status': incident.status,
+            'checklist': existing_checklist,
+            'notes': recovery_payload['notes'],
+            'contained_at': incident.contained_at.isoformat() if incident.contained_at else None,
+            'recovered_at': incident.recovered_at.isoformat() if incident.recovered_at else None,
+            'rto_minutes': incident.rto_minutes
+        }), 200
+
+    @staticmethod
+    def get_recovery_stats() -> Tuple[Dict[str, Any], int]:
+        total_incidents = Incident.query.count()
+        recovered_incidents = Incident.query.filter(Incident.status.in_(['Recovered', 'RESOLVED'])).all()
+        total_recovered = len(recovered_incidents)
+
+        if total_incidents > 0:
+            recovery_rate = round((total_recovered / total_incidents) * 100, 1)
+        else:
+            recovery_rate = 0.0
+
+        incidents_with_rto = Incident.query.filter(
+            Incident.contained_at.isnot(None),
+            Incident.recovered_at.isnot(None)
+        ).all()
+
+        rto_values = [inc.rto_minutes for inc in incidents_with_rto if inc.rto_minutes is not None]
+        avg_rto_minutes = round(sum(rto_values) / len(rto_values), 1) if rto_values else None
+
+        return jsonify({
+            'recovery_rate': recovery_rate,
+            'avg_rto_minutes': avg_rto_minutes,
+            'total_recovered': total_recovered,
+            'total_incidents': total_incidents
+        }), 200
+
+    @staticmethod
     def get_canaries() -> Tuple[Dict[str, Any], int]:
         canaries = CanaryFile.query.all()
         return jsonify([c.to_dict() for c in canaries]), 200
@@ -86,7 +165,6 @@ class APIController:
             'message': f'Successfully deactivated and deleted {deleted_count} canary files.',
             'deleted_count': deleted_count
         }), 200
-
 
     @staticmethod
     def deploy_canaries() -> Tuple[Dict[str, Any], int]:
@@ -245,11 +323,18 @@ class APIController:
 
     @staticmethod
     def get_ai_insights() -> Tuple[Dict[str, Any], int]:
+        now = time.time()
+        if _insights_cache['data'] and now - _insights_cache['ts'] < CACHE_TTL:
+            return jsonify(_insights_cache['data']), 200
+
         monitor_mgr = getattr(current_app, 'monitor_manager', None)
         is_running = monitor_mgr.get_status().get('is_running', False) if monitor_mgr else False
         from app.services.ai_service import AIService
         insights = AIService.get_dashboard_insights(is_running)
+        _insights_cache['data'] = insights
+        _insights_cache['ts'] = time.time()
         return jsonify(insights), 200
+
 
     @staticmethod
     def get_ai_status() -> Tuple[Dict[str, Any], int]:

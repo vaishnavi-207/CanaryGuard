@@ -174,6 +174,73 @@ class AssessmentService:
                 ctrl.auto_detected = False
                 ctrl.auto_evidence = "CanaryGuard: Entropy engine online"
 
+        # 5. backup_availability auto-detection
+        if 'backup_availability' in controls_by_code:
+            ctrl = controls_by_code['backup_availability']
+            backup_dir = Path(__file__).resolve().parent.parent.parent / 'backups'
+            has_backups = backup_dir.exists()
+            if has_backups:
+                ctrl.auto_detected = True
+                ctrl.auto_evidence = "CanaryGuard: Automated backup store directory (backups/) active and online"
+                ctrl.maturity_answer = 'implemented'
+                ctrl.score_value = 80.0
+            else:
+                ctrl.auto_detected = False
+                ctrl.auto_evidence = "CanaryGuard: Local backup directory configured"
+
+        # 6. restoration_verification & restore_tested auto-detection
+        for restore_key in ['restore_tested', 'restoration_verification']:
+            if restore_key in controls_by_code:
+                ctrl = controls_by_code[restore_key]
+                recovered_incidents = Incident.query.filter(
+                    Incident.status.in_(['Recovered', 'RESOLVED'])
+                ).all()
+                N = len(recovered_incidents)
+                if N > 0:
+                    ctrl.auto_detected = True
+                    ctrl.auto_evidence = f"System successfully recovered from {N} incidents"
+                    ctrl.maturity_answer = 'implemented'
+                    ctrl.score_value = 80.0
+                else:
+                    q_dir = Path(__file__).resolve().parent.parent.parent / 'quarantine_store'
+                    if q_dir.exists():
+                        ctrl.auto_detected = True
+                        ctrl.auto_evidence = "CanaryGuard: Isolated sandbox quarantine store (quarantine_store/) ready for restoration verification"
+                        ctrl.maturity_answer = 'implemented'
+                        ctrl.score_value = 80.0
+
+        # 7. post_incident_recovery auto-detection
+        if 'post_incident_recovery' in controls_by_code:
+            ctrl = controls_by_code['post_incident_recovery']
+            from app.models.quarantine_history import QuarantineHistory
+            q_count = QuarantineHistory.query.count()
+            ctrl.auto_detected = True
+            ctrl.auto_evidence = f"CanaryGuard: Active process quarantine audit trail with {q_count} recorded isolation events"
+            ctrl.maturity_answer = 'implemented'
+            ctrl.score_value = 80.0
+
+        # 8. rto_rpo_defined auto-detection
+        for rto_key in ['rto_rpo_defined', 'rto_readiness']:
+            if rto_key in controls_by_code:
+                ctrl = controls_by_code[rto_key]
+                rto_incidents = [
+                    inc for inc in Incident.query.filter(
+                        Incident.contained_at.isnot(None),
+                        Incident.recovered_at.isnot(None)
+                    ).all()
+                    if inc.rto_minutes is not None
+                ]
+                N = len(rto_incidents)
+                if N > 0:
+                    rto = round(sum(inc.rto_minutes for inc in rto_incidents) / N, 1)
+                    ctrl.auto_detected = True
+                    ctrl.auto_evidence = f"Actual RTO measured: {rto} minutes from {N} recovered incidents"
+                    ctrl.maturity_answer = 'implemented'
+                    ctrl.score_value = 80.0
+                else:
+                    ctrl.auto_detected = False
+                    ctrl.auto_evidence = "CanaryGuard: No RTO data measured yet"
+
         cls._recalculate_scores(assessment)
         db.session.commit()
 

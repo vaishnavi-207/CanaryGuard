@@ -69,6 +69,15 @@
         </div>
         <div class="card-value" id="readiness-score-value">—</div>
     </div>
+
+    <div class="card" id="recovery-rate-card">
+        <div class="card-header-sm">
+            <span class="card-title-sm">Recovery Rate</span>
+            <span>🔄</span>
+        </div>
+        <div class="card-value" id="recovery-rate-value" style="color: var(--accent-green);">--%</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;" id="recovery-rto-subtitle">Loading...</div>
+    </div>
 </div>
 
 <!-- Feature 6 AI Security Insights Card & Features 12 & 13 Charts Grid -->
@@ -209,7 +218,42 @@
         fetchAIInsights();
         setInterval(fetchAIInsights, 15000);
         loadReadinessScore();
+        loadRecoveryStats();
     });
+
+    async function loadRecoveryStats() {
+        try {
+            const res = await fetch('/api/recovery/stats');
+            const data = await res.json();
+            const valEl = document.getElementById('recovery-rate-value');
+            const subEl = document.getElementById('recovery-rto-subtitle');
+
+            if (data && typeof data.recovery_rate === 'number') {
+                const rate = data.recovery_rate;
+                valEl.textContent = rate.toFixed(1) + '%';
+                
+                if (rate > 80) {
+                    valEl.style.color = 'var(--accent-green, #10b981)';
+                } else if (rate >= 50) {
+                    valEl.style.color = 'var(--accent-yellow, #f59e0b)';
+                } else {
+                    valEl.style.color = 'var(--accent-red, #ef4444)';
+                }
+
+                if (data.avg_rto_minutes !== null && data.avg_rto_minutes !== undefined) {
+                    subEl.textContent = `Avg RTO: ${data.avg_rto_minutes}m`;
+                } else {
+                    subEl.textContent = 'No data yet';
+                }
+            } else {
+                valEl.textContent = '0.0%';
+                subEl.textContent = 'No data yet';
+            }
+        } catch(e) {
+            console.error('Failed to load recovery stats:', e);
+            document.getElementById('recovery-rto-subtitle').textContent = 'No data yet';
+        }
+    }
 
     async function fetchAIInsights() {
         try {

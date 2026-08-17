@@ -56,116 +56,215 @@ class PDFService:
         if not HAS_REPORTLAB:
             return _generate_fallback_pdf("Security Executive Report")
 
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter
+
         buffer = io.BytesIO()
+
+        def draw_header_footer(canvas, doc):
+            canvas.saveState()
+            # Header bar
+            canvas.setFillColor(colors.HexColor('#0f172a'))
+            canvas.rect(0, 700, 620, 150, fill=1, stroke=0)
+            # Logo box - cyan rounded square
+            canvas.setFillColor(colors.HexColor('#0284c7'))
+            canvas.roundRect(20, 715, 55, 55, 8, fill=1, stroke=0)
+            # CG text
+            canvas.setFillColor(colors.HexColor('#ffffff'))
+            canvas.setFont('Helvetica-Bold', 22)
+            canvas.drawCentredString(47, 732, 'CG')
+            # Yellow accent dot
+            canvas.setFillColor(colors.HexColor('#fbbf24'))
+            canvas.circle(62, 762, 5, fill=1, stroke=0)
+            # Company name
+            canvas.setFillColor(colors.HexColor('#ffffff'))
+            canvas.setFont('Helvetica-Bold', 18)
+            canvas.drawString(85, 745, 'CanaryGuard EDR')
+            canvas.setFillColor(colors.HexColor('#0ea5e9'))
+            canvas.setFont('Helvetica', 10)
+            canvas.drawString(85, 728, 'AI Endpoint Detection & Response Platform')
+            # Right side - report info
+            canvas.setFillColor(colors.HexColor('#ffffff'))
+            canvas.setFont('Helvetica-Bold', 11)
+            canvas.drawRightString(590, 750, 'Security Executive Report')
+            canvas.setFillColor(colors.HexColor('#94a3b8'))
+            canvas.setFont('Helvetica', 9)
+            canvas.drawRightString(590, 735, f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}')
+            # Green status badge
+            canvas.setFillColor(colors.HexColor('#16a34a'))
+            canvas.roundRect(510, 713, 80, 18, 4, fill=1, stroke=0)
+            canvas.setFillColor(colors.HexColor('#ffffff'))
+            canvas.setFont('Helvetica-Bold', 8)
+            canvas.drawCentredString(550, 718, 'PROTECTED')
+            # Cyan accent line
+            canvas.setFillColor(colors.HexColor('#0284c7'))
+            canvas.rect(0, 698, 620, 3, fill=1, stroke=0)
+            # Footer
+            canvas.setFillColor(colors.HexColor('#f8fafc'))
+            canvas.rect(0, 0, 620, 25, fill=1, stroke=0)
+            canvas.setFillColor(colors.HexColor('#64748b'))
+            canvas.setFont('Helvetica', 7)
+            canvas.drawString(20, 8, 'CanaryGuard EDR — Confidential Security Report')
+            canvas.drawCentredString(306, 8, f'Page {doc.page}')
+            canvas.drawRightString(590, 8, 'National Technical Research Organisation')
+            canvas.restoreState()
+
         doc = SimpleDocTemplate(
             buffer,
             pagesize=letter,
             rightMargin=36,
             leftMargin=36,
-            topMargin=36,
-            bottomMargin=36
+            topMargin=110,
+            bottomMargin=40
         )
 
         styles = getSampleStyleSheet()
 
-        # Custom styles
-        title_style = ParagraphStyle(
-            'DocTitle',
-            parent=styles['Heading1'],
-            fontName='Helvetica-Bold',
-            fontSize=22,
-            leading=26,
-            textColor=colors.HexColor('#0f172a')
-        )
-        subtitle_style = ParagraphStyle(
-            'DocSubTitle',
-            parent=styles['Normal'],
-            fontName='Helvetica',
-            fontSize=10,
-            leading=14,
-            textColor=colors.HexColor('#64748b')
-        )
         h2_style = ParagraphStyle(
-            'SectionH2',
-            parent=styles['Heading2'],
-            fontName='Helvetica-Bold',
-            fontSize=14,
-            leading=18,
-            textColor=colors.HexColor('#1e293b'),
-            spaceBefore=12,
-            spaceAfter=6
+            'SH2', parent=styles['Heading2'],
+            fontName='Helvetica-Bold', fontSize=13, leading=16,
+            textColor=colors.HexColor('#0f172a'), spaceBefore=14, spaceAfter=6
         )
         body_style = ParagraphStyle(
-            'BodyDark',
-            parent=styles['Normal'],
-            fontName='Helvetica',
-            fontSize=9,
-            leading=13,
+            'SBody', parent=styles['Normal'],
+            fontName='Helvetica', fontSize=9, leading=13,
             textColor=colors.HexColor('#334155')
+        )
+        label_style = ParagraphStyle(
+            'SLabel', parent=styles['Normal'],
+            fontName='Helvetica-Bold', fontSize=9, leading=13,
+            textColor=colors.HexColor('#64748b')
         )
 
         elements = []
 
-        # Header Title Table
-        header_data = [
-            [
-                Paragraph("<b>CANARYGUARD EDR</b><br/><font size=9 color='#64748b'>AI Endpoint Detection & Response</font>", title_style),
-                Paragraph(f"<b>Security Executive Report</b><br/>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}<br/>Status: <b>PROTECTED</b>", subtitle_style)
-            ]
-        ]
-        header_table = Table(header_data, colWidths=[300, 240])
-        header_table.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (1,0), (1,0), 'RIGHT'),
-        ]))
-        elements.append(header_table)
-        elements.append(Spacer(1, 10))
-        elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#0284c7'), spaceAfter=15))
-
-        # Overall Metrics Summary Table
         incidents = Incident.query.order_by(Incident.created_at.desc()).all()
         canaries_count = CanaryFile.query.filter_by(is_active=True).count()
         quarantine_count = QuarantineHistory.query.count()
         active_threats = sum(1 for i in incidents if i.status == 'ACTIVE')
-
         insights = AIService.get_dashboard_insights(True)
 
+        # Threat trend banner
+        trend = insights.get('threat_trend', 'NORMAL')
+        if 'CRITICAL' in trend.upper():
+            banner_color = '#dc2626'
+            banner_icon = 'CRITICAL ELEVATION'
+        elif 'ELEVATED' in trend.upper():
+            banner_color = '#d97706'
+            banner_icon = 'ELEVATED THREAT'
+        else:
+            banner_color = '#16a34a'
+            banner_icon = 'NORMAL OPERATIONS'
+
+        banner_data = [[Paragraph(
+            f"<font color='#ffffff'><b>⚠ THREAT TREND: {banner_icon}</b></font>",
+            ParagraphStyle('Banner', parent=styles['Normal'],
+                fontName='Helvetica-Bold', fontSize=11, alignment=1))]]
+        banner_table = Table(banner_data, colWidths=[540])
+        banner_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor(banner_color)),
+            ('PADDING', (0,0), (-1,-1), 10),
+            ('ROUNDEDCORNERS', [6]),
+        ]))
+        elements.append(banner_table)
+        elements.append(Spacer(1, 14))
+
+        # 4-Column Metrics Table
         metrics_data = [
             [
-                Paragraph(f"<b>Total Incidents</b><br/><font size=14 color='#0f172a'><b>{len(incidents)}</b></font>", body_style),
-                Paragraph(f"<b>Active Threats</b><br/><font size=14 color='#dc2626'><b>{active_threats}</b></font>", body_style),
-                Paragraph(f"<b>Active Canaries</b><br/><font size=14 color='#0284c7'><b>{canaries_count}</b></font>", body_style),
-                Paragraph(f"<b>Quarantined</b><br/><font size=14 color='#16a34a'><b>{quarantine_count}</b></font>", body_style),
+                f"{len(incidents)}",
+                f"{active_threats}",
+                f"{canaries_count}",
+                f"{quarantine_count}",
+            ],
+            [
+                "Total Incidents",
+                "Active Threats",
+                "Active Canaries",
+                "Quarantined",
             ]
         ]
-        metrics_table = Table(metrics_data, colWidths=[135, 135, 135, 135])
+        metrics_table = Table(metrics_data, colWidths=[132, 132, 132, 132])
         metrics_table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
-            ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#e2e8f0')),
-            ('INNERGRID', (0,0), (-1,-1), 1, colors.HexColor('#e2e8f0')),
-            ('PADDING', (0,0), (-1,-1), 10),
+            ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#eff6ff')),
+            ('BACKGROUND', (1,0), (1,-1), colors.HexColor('#fef2f2')),
+            ('BACKGROUND', (2,0), (2,-1), colors.HexColor('#ecfeff')),
+            ('BACKGROUND', (3,0), (3,-1), colors.HexColor('#f0fdf4')),
+            ('BOX', (0,0), (0,-1), 2, colors.HexColor('#0284c7')),
+            ('BOX', (1,0), (1,-1), 2, colors.HexColor('#dc2626')),
+            ('BOX', (2,0), (2,-1), 2, colors.HexColor('#0ea5e9')),
+            ('BOX', (3,0), (3,-1), 2, colors.HexColor('#16a34a')),
+            ('TEXTCOLOR', (0,0), (0,0), colors.HexColor('#0284c7')),
+            ('TEXTCOLOR', (1,0), (1,0), colors.HexColor('#dc2626')),
+            ('TEXTCOLOR', (2,0), (2,0), colors.HexColor('#0ea5e9')),
+            ('TEXTCOLOR', (3,0), (3,0), colors.HexColor('#16a34a')),
+            ('TEXTCOLOR', (0,1), (-1,1), colors.HexColor('#64748b')),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 18),
+            ('FONTNAME', (0,1), (-1,1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,1), 9),
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('PADDING', (0,0), (-1,-1), 12),
         ]))
         elements.append(metrics_table)
-        elements.append(Spacer(1, 15))
+        elements.append(Spacer(1, 18))
 
-        # AI Threat Insights Section
-        elements.append(Paragraph("AI Security & Telemetry Summary", h2_style))
-        ai_summary_text = (
-            f"<b>System Monitoring Status:</b> {insights['monitoring_health']}<br/>"
-            f"<b>Ransomware Threat Status:</b> {insights['ransomware_status']}<br/>"
-            f"<b>Most Active Directory:</b> {insights['most_active_folder']}<br/>"
-            f"<b>Most Targeted Extension:</b> {insights['most_targeted_type']}<br/>"
-            f"<b>Highest Recorded Shannon Entropy:</b> {insights['highest_entropy_today']}<br/>"
-            f"<b>Threat Trend Assessment:</b> <b>{insights['threat_trend']}</b>"
-        )
-        elements.append(Paragraph(ai_summary_text, body_style))
-        elements.append(Spacer(1, 15))
+        # AI Telemetry section
+        elements.append(HRFlowable(width='100%', thickness=3,
+            color=colors.HexColor('#0284c7'), spaceAfter=8))
+        elements.append(Paragraph('AI Security & Telemetry Summary', h2_style))
 
-        # Recent Incidents Table & AI Analysis
-        elements.append(Paragraph("Recent Critical Incident Telemetry", h2_style))
+        telemetry_items = [
+            ('✓ System Status', insights['monitoring_health'], '#16a34a'),
+            ('⚡ Ransomware Status', insights['ransomware_status'], '#dc2626'),
+            ('📁 Most Active Directory', insights['most_active_folder'], '#0284c7'),
+            ('🎯 Most Targeted Extension', insights['most_targeted_type'], '#d97706'),
+            ('📊 Highest Shannon Entropy', str(insights['highest_entropy_today']), '#7c3aed'),
+            ('⬆ Threat Trend', insights['threat_trend'], '#dc2626'),
+        ]
 
-        inc_table_data = [["ID", "Timestamp", "File Path", "Threat Level", "Entropy", "Process", "Score"]]
+        tel_data = []
+        for label, value, color in telemetry_items:
+            tel_data.append([
+                Paragraph(f"<b>{label}</b>", label_style),
+                Paragraph(f"<font color='{color}'><b>{value}</b></font>", body_style)
+            ])
+
+        tel_table = Table(tel_data, colWidths=[200, 340])
+        tel_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+            ('ROWBACKGROUNDS', (0,0), (-1,-1),
+                [colors.HexColor('#f8fafc'), colors.HexColor('#ffffff')]),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+            ('LEFTPADDING', (0,0), (-1,-1), 12),
+            ('RIGHTPADDING', (0,0), (-1,-1), 12),
+            ('TOPPADDING', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+            ('LINEAFTER', (0,0), (0,-1), 2, colors.HexColor('#0284c7')),
+        ]))
+        elements.append(tel_table)
+        elements.append(Spacer(1, 18))
+
+        # Incidents table
+        elements.append(HRFlowable(width='100%', thickness=3,
+            color=colors.HexColor('#0284c7'), spaceAfter=8))
+        elements.append(Paragraph('Recent Critical Incident Telemetry', h2_style))
+
+        def threat_color(level):
+            return {'CRITICAL':'#dc2626','HIGH':'#d97706',
+                    'MEDIUM':'#ca8a04','LOW':'#16a34a'}.get(
+                    str(level).upper(), '#64748b')
+
+        def score_color(score):
+            s = int(score.replace('%','')) if isinstance(score,str) else int(score)
+            if s >= 70: return '#dc2626'
+            if s >= 40: return '#d97706'
+            return '#16a34a'
+
+        inc_data = [['ID','Timestamp','File','Threat','Entropy','Process','Score']]
         for inc in incidents[:10]:
             score = int(inc.confidence_score) if inc.confidence_score else AIService.calculate_threat_score({
                 'canary_triggered': inc.canary_triggered,
@@ -173,51 +272,124 @@ class PDFService:
                 'process_name': inc.process_name,
                 'description': inc.description
             })
-            time_str = inc.created_at.strftime("%Y-%m-%d %H:%M") if hasattr(inc, 'created_at') and inc.created_at else "N/A"
-            filename = os.path.basename(inc.file_path or 'N/A')
-            inc_table_data.append([
-                str(inc.id),
-                time_str,
-                filename,
-                inc.threat_level,
-                f"{inc.entropy_value:.2f}" if inc.entropy_value else "N/A",
-                inc.process_name or "Unknown",
-                f"{score}%"
+            ts = inc.created_at.strftime('%d %b %H:%M') if inc.created_at else 'N/A'
+            fname = os.path.basename(inc.file_path or 'N/A')
+            tc = threat_color(inc.threat_level)
+            inc_data.append([
+                Paragraph(f"<b>#{inc.id}</b>", body_style),
+                Paragraph(ts, body_style),
+                Paragraph(fname, body_style),
+                Paragraph(f"<font color='{tc}'><b>{inc.threat_level}</b></font>", body_style),
+                Paragraph(f"{inc.entropy_value:.2f}" if inc.entropy_value else 'N/A', body_style),
+                Paragraph(inc.process_name or 'Unknown', body_style),
+                Paragraph(f"<font color='{score_color(score)}'><b>{score}%</b></font>", body_style),
             ])
 
-        if len(inc_table_data) == 1:
-            inc_table_data.append(["-", "No incidents recorded", "-", "-", "-", "-", "-"])
+        if len(inc_data) == 1:
+            inc_data.append([Paragraph('No incidents recorded', body_style),
+                '-','-','-','-','-','-'])
 
-        inc_table = Table(inc_table_data, colWidths=[30, 95, 150, 70, 50, 95, 50])
+        inc_table = Table(inc_data, colWidths=[35, 72, 130, 65, 50, 110, 48])
         inc_table.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
             ('FONTSIZE', (0,0), (-1,-1), 8),
-            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
-            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')]),
-            ('PADDING', (0,0), (-1,-1), 5),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1),
+                [colors.white, colors.HexColor('#f8fafc')]),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+            ('PADDING', (0,0), (-1,-1), 7),
+            ('ALIGN', (4,0), (6,-1), 'CENTER'),
         ]))
         elements.append(inc_table)
-        elements.append(Spacer(1, 15))
+        elements.append(Spacer(1, 18))
+        elements.append(PageBreak())
 
-        # Security Recommendations
-        elements.append(Paragraph("AI Security Recommendations", h2_style))
+        # Recommendations page
+        elements.append(HRFlowable(width='100%', thickness=3,
+            color=colors.HexColor('#0284c7'), spaceAfter=8))
+        elements.append(Paragraph('Recovery Status & Recommendations', h2_style))
+
+        latest_inc = incidents[0] if incidents else None
+        if latest_inc and hasattr(latest_inc, 'get_recovery_checklist'):
+            chk = latest_inc.get_recovery_checklist()
+            chk_items = [
+                ('Threat Contained', chk.get('Threat contained', False)),
+                ('Backup Availability Verified', chk.get('Backup availability verified', False)),
+                ('RTO/RPO Readiness Confirmed', chk.get('Recovery point identified', False)),
+                ('Restoration Verified', chk.get('Restoration verified', False)),
+            ]
+            chk_data = []
+            for item_label, done in chk_items:
+                color = '#16a34a' if done else '#dc2626'
+                icon = '✓' if done else '✗'
+                chk_data.append([
+                    Paragraph(f"<font color='{color}'><b>{icon}</b></font>",
+                        ParagraphStyle('CIcon', parent=styles['Normal'],
+                        fontSize=14, alignment=1)),
+                    Paragraph(f"<b>{item_label}</b>",
+                        ParagraphStyle('CItem', parent=styles['Normal'],
+                        fontSize=10, textColor=colors.HexColor('#0f172a'))),
+                    Paragraph(
+                        "<font color='#16a34a'>Complete</font>" if done
+                        else "<font color='#dc2626'>Pending</font>",
+                        ParagraphStyle('CStat', parent=styles['Normal'],
+                        fontSize=9, alignment=1)),
+                ])
+            chk_table = Table(chk_data, colWidths=[40, 380, 120])
+            chk_table.setStyle(TableStyle([
+                ('ROWBACKGROUNDS', (0,0), (-1,-1),
+                    [colors.HexColor('#f0fdf4'), colors.HexColor('#ffffff')]),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+                ('PADDING', (0,0), (-1,-1), 10),
+                ('ALIGN', (0,0), (0,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ]))
+            elements.append(chk_table)
+            elements.append(Spacer(1, 16))
+
         recs = [
-            "1. Maintain automated canary decoy files in all high-value network shares.",
-            "2. Keep Auto Quarantine enabled to instantly terminate suspicious elevated PIDs.",
-            "3. Enforce offline backup routines for protected directories.",
-            "4. Review processes exhibiting high file entropy (> 7.0 Shannon scale)."
+            ('Canary Deployment', 'Maintain automated canary decoy files in all high-value network shares to detect ransomware instantly.'),
+            ('Auto Quarantine', 'Keep Auto Quarantine enabled to terminate suspicious elevated PIDs before mass encryption occurs.'),
+            ('Isolated Backups', 'Configure air-gapped or immutable WORM backups to ensure clean restore points are always available.'),
+            ('RTO/RPO Targets', 'Define and verify RTO/RPO targets. Run quarterly restore drills into sandbox environments.'),
+            ('Recovery Playbooks', 'Document and test recovery playbooks with all stakeholders including legal, PR, and C-suite.'),
         ]
-        for r in recs:
-            elements.append(Paragraph(f"• {r}", body_style))
+
+        for i, (title, desc) in enumerate(recs):
+            rec_data = [[
+                Paragraph(f"<font color='#ffffff'><b>{i+1}</b></font>",
+                    ParagraphStyle('RNum', parent=styles['Normal'],
+                    fontSize=14, alignment=1, fontName='Helvetica-Bold')),
+                Paragraph(f"<b>{title}</b><br/><font size=9 color='#334155'>{desc}</font>",
+                    ParagraphStyle('RText', parent=styles['Normal'],
+                    fontSize=10, leading=14))
+            ]]
+            rec_table = Table(rec_data, colWidths=[36, 504])
+            rec_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (0,0), colors.HexColor('#0284c7')),
+                ('BACKGROUND', (1,0), (1,0), colors.HexColor('#eff6ff')),
+                ('LINEAFTER', (0,0), (0,0), 2, colors.HexColor('#0284c7')),
+                ('LINEBEFORE', (1,0), (1,0), 3, colors.HexColor('#0284c7')),
+                ('PADDING', (0,0), (0,0), 10),
+                ('PADDING', (1,0), (1,0), 12),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('ROUNDEDCORNERS', [6]),
+            ]))
+            elements.append(rec_table)
+            elements.append(Spacer(1, 8))
 
         elements.append(Spacer(1, 20))
-        elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1'), spaceAfter=10))
-        elements.append(Paragraph("CanaryGuard EDR Security Platform — Confidential Automated Forensic Report", subtitle_style))
+        elements.append(HRFlowable(width='100%', thickness=1,
+            color=colors.HexColor('#e2e8f0'), spaceAfter=8))
+        elements.append(Paragraph(
+            "CanaryGuard EDR Security Platform — Confidential Automated Forensic Report — SIH260074",
+            ParagraphStyle('Footer2', parent=styles['Normal'],
+            fontSize=8, textColor=colors.HexColor('#94a3b8'), alignment=1)))
 
-        doc.build(elements)
+        doc.build(elements,
+            onFirstPage=draw_header_footer,
+            onLaterPages=draw_header_footer)
         buffer.seek(0)
         return buffer
 

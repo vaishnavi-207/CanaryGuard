@@ -2,7 +2,8 @@
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
-    <a href="/incidents" style="color: var(--accent-cyan); text-decoration: none; font-size: 0.9rem;">← Back to Incidents List</a>
+    <a href="/incidents" style="color: var(--accent-cyan); text-decoration: none; font-size: 0.9rem;">← Back to
+        Incidents List</a>
 </div>
 
 <!-- Header Info Bar -->
@@ -17,7 +18,8 @@
             </p>
         </div>
         <div style="text-align: right;">
-            <span class="status-badge {% if incident.status == 'ACTIVE' %}status-stopped{% else %}status-active{% endif %}">
+            <span
+                class="status-badge {% if incident.status == 'ACTIVE' %}status-stopped{% else %}status-active{% endif %}">
                 STATUS: {{ incident.status }}
             </span>
             <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
@@ -29,7 +31,7 @@
 
 <!-- AI Threat Score & Incident Summary (Features 3 & 4) -->
 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-    
+
     <!-- Feature 3 AI Threat Score Card -->
     <div class="card">
         <div class="card-header-sm">
@@ -50,14 +52,16 @@
     <!-- Feature 4 AI Incident Summary Card -->
     <div class="card">
         <div class="card-header-sm" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
-            <span class="card-title-sm" style="font-size: 1rem; color: var(--accent-cyan);">🤖 AI Incident Summary</span>
+            <span class="card-title-sm" style="font-size: 1rem; color: var(--accent-cyan);">🤖 AI Incident
+                Summary</span>
             <span style="font-size: 0.8rem; color: var(--text-muted);">Timestamp: {{ summary.time_str }}</span>
         </div>
         <div style="margin-top: 1rem;">
             <p style="font-size: 1rem; line-height: 1.6; color: var(--text-primary); margin-bottom: 1rem;">
                 {{ summary.summary }}
             </p>
-            <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--accent-red); padding: 0.75rem 1rem; border-radius: 4px;">
+            <div
+                style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--accent-red); padding: 0.75rem 1rem; border-radius: 4px;">
                 <strong style="color: var(--accent-red);">Recommended Action:</strong>
                 <span style="color: var(--text-secondary); font-size: 0.9rem;"> {{ summary.recommended_action }}</span>
             </div>
@@ -67,10 +71,11 @@
 
 <!-- Feature 4 AI Breakdown & Dynamic Recommendations (Features 4 & 5) -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-    
+
     <!-- AI Explanation Section -->
     <div class="card">
-        <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <h3
+            style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
             🔍 Why Was This Flagged?
         </h3>
         <div style="white-space: pre-line; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
@@ -80,12 +85,14 @@
 
     <!-- Feature 5 Recommendations Section -->
     <div class="card">
-        <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <h3
+            style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
             🛡️ Recommended Remediation Steps
         </h3>
         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
             {% for rec in recommendations %}
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); padding: 0.75rem 1rem; border-radius: 8px; display: flex; align-items: flex-start; gap: 0.75rem;">
+            <div
+                style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); padding: 0.75rem 1rem; border-radius: 8px; display: flex; align-items: flex-start; gap: 0.75rem;">
                 <span style="font-size: 1.2rem;">{% if rec.recommended %}✅{% else %}ℹ️{% endif %}</span>
                 <div>
                     <strong style="color: var(--text-primary); font-size: 0.95rem;">{{ rec.title }}</strong>
@@ -97,19 +104,143 @@
     </div>
 </div>
 
-<!-- Feature 4 Vertical Incident Timeline -->
-<div class="card">
-    <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1.5rem;">⏱️ Chronological Forensic Event Timeline</h3>
-    <ul class="timeline">
-        {% for evt in timeline %}
-        <li class="timeline-item">
-            <div class="timeline-badge badge-{{ evt.color }}"></div>
-            <div class="timeline-panel">
-                <span class="timeline-time">{{ evt.time }}</span>
-                <strong class="timeline-title">{{ evt.title }}</strong>
+<!-- Feature 4 Vertical Incident Timeline & Early Recovery Workflow -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+
+    <!-- Early Recovery Workflow & Checklist -->
+    <div class="card">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                🔄 Early Incident Recovery Workflow
+            </h3>
+            <span class="status-badge status-active" id="rec-current-stage-badge">
+                {{ incident.status }}
+            </span>
+        </div>
+
+        <!-- Recovery Flow Stepper -->
+        <div style="margin-bottom: 1.25rem;">
+            <div
+                style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">
+                Recovery Lifecycle Stage:
             </div>
-        </li>
-        {% endfor %}
-    </ul>
+            <div
+                style="display: flex; gap: 0.35rem; align-items: center; background: rgba(8, 12, 20, 0.6); padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.75rem; overflow-x: auto;">
+                {% set stages = ['Detected', 'Contained', 'Recovery Assessment', 'Recovery In Progress', 'Recovered'] %}
+                {% set current_found = false %}
+                {% for stg in stages %}
+                <span
+                    class="recovery-stage-pill {% if incident.status == stg %}stage-active{% elif incident.status in stages and stages.index(stg) < stages.index(incident.status) %}stage-done{% endif %}"
+                    style="padding: 0.3rem 0.6rem; border-radius: 4px; font-weight: 600; white-space: nowrap; border: 1px solid var(--border-color); background: {% if incident.status == stg %}var(--accent-cyan){% elif incident.status in stages and stages.index(stg) < stages.index(incident.status) %}rgba(34, 197, 94, 0.2){% else %}rgba(15, 23, 42, 0.5){% endif %}; color: {% if incident.status == stg %}#000{% elif incident.status in stages and stages.index(stg) < stages.index(incident.status) %}var(--accent-green){% else %}var(--text-muted){% endif %};">
+                    {{ stg }}
+                </span>
+                {% if not loop.last %}<span style="color: var(--text-muted);">→</span>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Status Transition Selector -->
+        <div style="margin-bottom: 1.25rem; display: flex; gap: 0.75rem; align-items: center;">
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">
+                Update Stage:
+            </label>
+            <select id="recovery-stage-select" class="form-input"
+                style="flex-grow: 1; padding: 0.4rem 0.6rem; background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 0.85rem;">
+                {% for stg in stages %}
+                <option value="{{ stg }}" {% if incident.status==stg %}selected{% endif %}>{{ stg }}</option>
+                {% endfor %}
+                <option value="RESOLVED" {% if incident.status=='RESOLVED' %}selected{% endif %}>RESOLVED</option>
+                <option value="FALSE_POSITIVE" {% if incident.status=='FALSE_POSITIVE' %}selected{% endif %}>
+                    FALSE_POSITIVE</option>
+            </select>
+        </div>
+
+        <!-- 9-Item Recovery Checklist -->
+        <div style="margin-bottom: 1.25rem;">
+            <div
+                style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.75rem; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.4rem;">
+                📋 Recovery Readiness Checklist:
+            </div>
+            {% set checklist = incident.get_recovery_checklist() %}
+            {% set items = [
+            'Threat contained',
+            'Affected systems/files identified',
+            'Backup availability verified',
+            'Recovery point identified',
+            'Recovery procedure available',
+            'Restoration initiated',
+            'Restoration verified',
+            'System operational',
+            'Post-incident assessment completed'
+            ] %}
+            <div
+                style="display: flex; flex-direction: column; gap: 0.45rem; max-height: 240px; overflow-y: auto; padding-right: 0.25rem;">
+                {% for item in items %}
+                <label
+                    style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; background: rgba(8, 12, 20, 0.4); padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                    <input type="checkbox" class="rec-check-item" data-item="{{ item }}" {% if checklist.get(item)
+                        %}checked{% endif %} style="accent-color: var(--accent-cyan); transform: scale(1.1);">
+                    <span>{{ item }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveRecoveryProgress({{ incident.id }})"
+            style="width: 100%; padding: 0.6rem; font-weight: 700; font-size: 0.9rem;">
+            💾 Save Recovery Progress
+        </button>
+    </div>
+
+    <!-- Feature 4 Vertical Incident Timeline -->
+    <div class="card">
+        <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1.5rem;">⏱️ Chronological Forensic
+            Event Timeline</h3>
+        <ul class="timeline">
+            {% for evt in timeline %}
+            <li class="timeline-item">
+                <div class="timeline-badge badge-{{ evt.color }}"></div>
+                <div class="timeline-panel">
+                    <span class="timeline-time">{{ evt.time }}</span>
+                    <strong class="timeline-title">{{ evt.title }}</strong>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
 </div>
+
+<script>
+    async function saveRecoveryProgress(incidentId) {
+        const stageSelect = document.getElementById('recovery-stage-select');
+        const newStatus = stageSelect.value;
+
+        const checklist = {};
+        document.querySelectorAll('.rec-check-item').forEach(el => {
+            checklist[el.getAttribute('data-item')] = el.checked;
+        });
+
+        try {
+            const resp = await fetch(`/api/incidents/${incidentId}/recovery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: newStatus,
+                    checklist: checklist
+                })
+            });
+
+            const data = await resp.json();
+            if (resp.ok) {
+                alert('Recovery progress saved successfully!');
+                window.location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to save recovery status'));
+            }
+        } catch (err) {
+            alert('Network error while saving recovery status: ' + err);
+        }
+    }
+</script>
 {% endblock %}

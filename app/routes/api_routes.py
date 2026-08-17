@@ -12,6 +12,8 @@ api_bp.route('/stop-monitor', methods=['POST'])(login_required(APIController.sto
 # Incidents
 api_bp.route('/incidents', methods=['GET'])(login_required(APIController.get_incidents))
 api_bp.route('/incidents/<int:incident_id>', methods=['DELETE'])(login_required(APIController.delete_incident))
+api_bp.route('/incidents/<int:incident_id>/recovery', methods=['POST', 'PUT'])(login_required(APIController.update_incident_recovery))
+api_bp.route('/recovery/stats', methods=['GET'])(login_required(APIController.get_recovery_stats))
 
 # Canary Files
 api_bp.route('/canaries', methods=['GET'])(login_required(APIController.get_canaries))

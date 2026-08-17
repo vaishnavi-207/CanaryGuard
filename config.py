@@ -16,6 +16,10 @@ class Config:
     """Base Configuration Class for CanaryGuard EDR Platform."""
     SECRET_KEY = os.getenv('SECRET_KEY', 'canaryguard-secret-key-super-secure-dev')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+    PERMANENT_SESSION_LIFETIME = 3600  # 1 hour
+
     
     # Path configuration
     DB_DIR = BASE_DIR / 'database'
@@ -50,6 +54,15 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 10,
+        'pool_recycle': 300,
+        'pool_pre_ping': True,
+        'connect_args': {'check_same_thread': False},
+        'pool_timeout': 20
+    }
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_RECORD_QUERIES = False
 
 class TestingConfig(Config):
     TESTING = True

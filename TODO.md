@@ -159,9 +159,13 @@ Overall Progress: 100%
 
 ---
 
-# Phase 17 – Final Documentation Update
+# Phase 18 – Recovery Tracking Improvements
 
-- [x] Updated `README.md`, `docs/PROJECT_REPORT.md`, `docs/ARCHITECTURE.md`, and `TODO.md` with complete Readiness Assessment Framework documentation, architecture flows, and SIH260074 evaluation criteria mapping.
+- [x] **Improvement 1 (Incidents List Recovery Stage & Progress Bar)**: Added "Recovery Stage" table column to `templates/incidents.html` with color-coded status badges (`Detected` → red, `Contained` → orange, `Recovery Assessment` → yellow, `Recovery In Progress` → blue, `Recovered`/`RESOLVED` → green) and dynamic 5-stage progress bars (20% to 100%).
+- [x] **Improvement 2 (RTO Timestamp Tracking & Model Property)**: Added `contained_at` and `recovered_at` UTC `db.DateTime` columns to `Incident` model in `app/models/incident.py`. Added `@property def rto_minutes(self)` returning calculated recovery delta. Updated `APIController.update_incident_recovery` to record UTC timestamps upon state transition to `Contained`, `Recovered`, or `RESOLVED`. Added SQLite schema auto-migration safety in `app/database/__init__.py`.
+- [x] **Improvement 3 (Assessment Auto-Detection for RECOVER Controls)**: Updated `AssessmentService.auto_detect_controls` in `app/services/assessment_service.py` to auto-detect RECOVER domain controls `rto_rpo_defined` (measured average RTO in minutes) and `restore_tested` (count of recovered incidents).
+- [x] **Improvement 4 (Dashboard Recovery Stats Card & API Endpoint)**: Created `GET /api/recovery/stats` REST endpoint in `app/controllers/api_controller.py` and registered in `app/routes/api_routes.py`. Added "Recovery Rate" card to `templates/dashboard.html` showing dynamic threshold colors (>80% green, 50-80% amber, <50% red) and `Avg RTO: Xm` / `No data yet` subtitle.
+- [x] **Automated Testing**: Created `tests/test_recovery.py` and validated full test suite passing (16/16 tests OK).
 
 ---
 
@@ -175,4 +179,4 @@ Overall Progress: 100%
 
 ---
 
-SIH260074 — All 4 evaluation criteria met. Project complete.
+SIH260074 — All evaluation criteria met. Project complete.

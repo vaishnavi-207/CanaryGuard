@@ -1,6 +1,19 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<style>
+.table-wrapper {
+    overflow: visible !important;
+}
+.custom-table th, .custom-table td {
+    white-space: nowrap;
+    padding: 0.75rem 1rem;
+}
+.custom-table tbody tr:hover {
+    background-color: var(--bg-hover, rgba(255, 255, 255, 0.05));
+}
+</style>
+
 <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
     <div>
         <h2>Security Incidents & AI Analysis Log</h2>
@@ -13,24 +26,22 @@
         <h3>Recorded Incidents</h3>
         <span style="font-size: 0.85rem; color: var(--text-muted);">Showing {{ incidents|length }} incidents</span>
     </div>
-    <table class="custom-table">
+    <div>
+    <table class="custom-table" style="width: 100%; table-layout: auto;">
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Timestamp</th>
-                <th>Threat Level</th>
-                <th>File Path</th>
-                <th>Canary Hit</th>
-                <th>Entropy</th>
-                <th>Process</th>
-                <th>Action</th>
-                <th>AI Analysis</th>
-                <th>Options</th>
+                <th>TIMESTAMP</th>
+                <th>THREAT LEVEL</th>
+                <th>RECOVERY STAGE</th>
+                <th>FILE PATH</th>
+                <th>ACTION</th>
+                <th>OPTIONS</th>
             </tr>
         </thead>
         <tbody>
             {% for inc in incidents %}
-            <tr>
+            <tr onclick="window.location='/incidents/{{ inc.id }}'" style="cursor: pointer;">
                 <td>#{{ inc.id }}</td>
                 <td>{{ inc.created_at.strftime('%d %b %Y %I:%M %p IST') if inc.created_at else 'N/A' }}</td>
                 <td>
@@ -38,28 +49,52 @@
                         {{ inc.threat_level }}
                     </span>
                 </td>
-                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ inc.file_path }}</td>
-                <td>{% if inc.canary_triggered %}⚠️ YES{% else %}NO{% endif %}</td>
-                <td>{{ "%.2f"|format(inc.entropy_value) if inc.entropy_value else '0.0' }}</td>
-                <td>{{ inc.process_name or 'N/A' }} (PID: {{ inc.process_id or '?' }})</td>
-                <td><span style="color: var(--accent-green);">{{ inc.action_taken }}</span></td>
                 <td>
-                    <a href="/incidents/{{ inc.id }}" class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
-                        View AI Breakdown →
-                    </a>
+                    {% if inc.status == 'Contained' %}
+                        {% set stage_num = 2 %}{% set badge_color = '#f97316' %}
+                    {% elif inc.status == 'Recovery Assessment' %}
+                        {% set stage_num = 3 %}{% set badge_color = '#f59e0b' %}
+                    {% elif inc.status == 'Recovery In Progress' %}
+                        {% set stage_num = 4 %}{% set badge_color = '#3b82f6' %}
+                    {% elif inc.status == 'Recovered' or inc.status == 'RESOLVED' %}
+                        {% set stage_num = 5 %}{% set badge_color = '#10b981' %}
+                    {% else %}
+                        {% set stage_num = 1 %}{% set badge_color = '#ef4444' %}
+                    {% endif %}
+                    {% set pct = (stage_num / 5 * 100)|int %}
+                    <div style="display: flex; flex-direction: column; gap: 4px; min-width: 120px;">
+                        <span style="font-size: 0.75rem; font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 4px; background: {{ badge_color }}22; color: {{ badge_color }}; border: 1px solid {{ badge_color }}44; display: inline-block; text-align: center;">
+                            {{ inc.status }} ({{ stage_num }}/5)
+                        </span>
+                        <div style="width: 100%; background: rgba(255, 255, 255, 0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                            <div style="width: {{ pct }}%; background: {{ badge_color }}; height: 100%; border-radius: 2px;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td title="{{ inc.file_path }}">{{ inc.file_path[:30] ~ '...' if inc.file_path and inc.file_path|length > 30 else (inc.file_path or 'N/A') }}</td>
+                <td>
+                    <span style="color: var(--accent-green); font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
+                        {{ inc.action_taken }}
+                    </span>
                 </td>
                 <td>
-                    <button class="btn btn-secondary" onclick="deleteIncident({{ inc.id }})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; color: var(--accent-red);">
+                    <button class="btn btn-secondary" onclick="event.stopPropagation(); deleteIncident({{ inc.id }})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; color: var(--accent-red);">
                         Delete
                     </button>
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="10" style="text-align: center; color: var(--text-muted);">No security incidents recorded. System is operating safely.</td></tr>
+            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No security incidents recorded. System is operating safely.</td></tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
+
 </div>
+
+<p style="color: #64748b; font-size: 0.8rem; margin-top: 0.5rem;">
+    💡 Click any row to view full AI Analysis & Recovery Tracking
+</p>
 {% endblock %}
 
 {% block scripts %}

@@ -164,15 +164,35 @@ class AIService:
     @classmethod
     def get_recommendations(cls, incident):
         """
-        Generates dynamic security recommendations tailored to incident parameters.
+        Generates dynamic security recommendations tailored to incident parameters and recovery weaknesses.
         """
+        checklist = incident.get_recovery_checklist() if hasattr(incident, 'get_recovery_checklist') else {}
+
         recommendations = [
             {"title": "Disconnect system", "desc": "Isolate the endpoint network adapter to prevent lateral movement.", "recommended": True},
             {"title": "Enable Auto Quarantine", "desc": "Ensure automated process suspension rules are active in settings.", "recommended": True},
-            {"title": "Restore files", "desc": "Replace altered or deleted canary decoys from clean backup snapshots.", "recommended": True},
-            {"title": "Review suspicious process", "desc": f"Investigate process '{incident.process_name or 'Unknown'}' binary signature and hash.", "recommended": True},
-            {"title": "Backup monitored folders", "desc": "Create offline immutable backups of all protected directories.", "recommended": True}
         ]
+
+        # Recovery weakness recommendations based on checklist & recovery status
+        if not checklist.get('Backup availability verified'):
+            recommendations.append({"title": "Enable isolated backups", "desc": "Configure air-gapped, WORM, or offsite immutable backups to prevent ransomware backup tampering.", "recommended": True})
+
+        if not checklist.get('Recovery procedure available'):
+            recommendations.append({"title": "Verify restoration procedures", "desc": "Ensure step-by-step technical recovery runbooks exist for critical databases and infrastructure.", "recommended": True})
+
+        if not checklist.get('Recovery point identified'):
+            recommendations.append({"title": "Define RTO/RPO targets", "desc": "Establish clear Recovery Time (RTO) and Recovery Point (RPO) objectives to minimize downtime data loss.", "recommended": True})
+
+        if not checklist.get('Restoration verified'):
+            recommendations.append({"title": "Test restoration regularly", "desc": "Conduct scheduled test restores into an isolated sandbox environment to verify database bootability.", "recommended": True})
+
+        if not checklist.get('Post-incident assessment completed'):
+            recommendations.append({"title": "Maintain an offline recovery copy", "desc": "Preserve secondary offline recovery snapshots isolated from domain administrator privileges.", "recommended": True})
+            recommendations.append({"title": "Document ransomware recovery procedures", "desc": "Formalize executive-approved Disaster Recovery and Business Continuity playbooks.", "recommended": True})
+
+        if len(recommendations) < 5:
+            recommendations.append({"title": "Review suspicious process", "desc": f"Investigate process '{incident.process_name or 'Unknown'}' binary signature and hash.", "recommended": True})
+
         return recommendations
 
     @classmethod

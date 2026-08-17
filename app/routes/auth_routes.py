@@ -39,9 +39,14 @@ def hash_password(password: str) -> str:
 def login():
     """Handle user authentication login."""
     if request.method == 'GET':
+        # Clear any stale session data
+        if not session.get('user_id'):
+            session.clear()
+
         if session.get('user_id'):
             return redirect(url_for('main.dashboard'))
         return render_template('login.html')
+
 
     # POST request processing
     if request.is_json:

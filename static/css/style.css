@@ -267,7 +267,7 @@ body {
 }
 
 .custom-table {
-  width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.9rem;
@@ -511,3 +511,30 @@ body {
   color: var(--text-primary);
   outline: none;
 }
+
+
+/* Incident table horizontal scroll fix */
+.incidents-scroll-wrapper {
+    overflow-x: scroll !important;
+    overflow-y: auto !important;
+    max-height: 72vh !important;
+    width: 100% !important;
+    display: block !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+.incidents-scroll-wrapper table {
+    min-width: 1500px !important;
+    width: 1500px !important;
+    table-layout: fixed !important;
+}
+.incidents-scroll-wrapper th,
+.incidents-scroll-wrapper td {
+    min-width: 120px !important;
+    max-width: 200px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.incidents-scroll-wrapper { overflow-x: scroll !important; display: block !important; }
+.incidents-scroll-wrapper .custom-table { width: 1500px !important; min-width: 1500px !important; }

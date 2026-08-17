@@ -17,7 +17,7 @@ def dashboard():
     status = monitor_mgr.get_status() if monitor_mgr else {'is_running': False, 'monitored_paths': []}
 
     total_incidents = Incident.query.count()
-    active_incidents = Incident.query.filter_by(status='ACTIVE').all()
+    active_incidents = Incident.query.filter_by(status='ACTIVE').limit(10).all()
     canary_count = CanaryFile.query.filter_by(is_active=True).count()
     quarantine_count = QuarantineHistory.query.count()
 
@@ -42,7 +42,7 @@ def threat_feed():
 @main_bp.route('/incidents')
 @login_required
 def incidents_view():
-    incidents = Incident.query.order_by(Incident.created_at.desc()).all()
+    incidents = Incident.query.order_by(Incident.created_at.desc()).limit(50).all()
     return render_template('incidents.html', incidents=incidents, page_title="Incident Management")
 
 
@@ -89,28 +89,28 @@ def processes_view():
 @main_bp.route('/canaries')
 @login_required
 def canaries_view():
-    canaries = CanaryFile.query.order_by(CanaryFile.created_at.desc()).all()
+    canaries = CanaryFile.query.order_by(CanaryFile.created_at.desc()).limit(50).all()
     return render_template('canaries.html', canaries=canaries, page_title="Canary File Management")
 
 
 @main_bp.route('/monitored-folders')
 @login_required
 def folders_view():
-    folders = MonitoredFolder.query.order_by(MonitoredFolder.created_at.desc()).all()
+    folders = MonitoredFolder.query.order_by(MonitoredFolder.created_at.desc()).limit(50).all()
     return render_template('monitored_folders.html', folders=folders, page_title="Monitored Folders")
 
 
 @main_bp.route('/statistics')
 @login_required
 def statistics_view():
-    incidents = Incident.query.all()
+    incidents = Incident.query.limit(50).all()
     return render_template('statistics.html', incidents=incidents, page_title="Threat Statistics & Analytics")
 
 
 @main_bp.route('/settings')
 @login_required
 def settings_view():
-    settings = SystemSetting.query.all()
+    settings = SystemSetting.query.limit(50).all()
     return render_template('settings.html', settings=settings, page_title="System Configuration")
 
 
